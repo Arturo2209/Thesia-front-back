@@ -1,8 +1,10 @@
 # Dependencies
-node_modules/
+**/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # Environment variables
 .env
@@ -10,10 +12,12 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+**/.env
 
 # Build outputs
-dist/
-build/
+**/dist/
+**/build/
+**/dist-ssr/
 *.tgz
 *.tar.gz
 
@@ -51,6 +55,11 @@ jspm_packages/
 *.swp
 *.swo
 *~
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # OS generated files
 .DS_Store
@@ -61,5 +70,12 @@ jspm_packages/
 ehthumbs.db
 Thumbs.db
 
+# Local files
+*.local
+
 # Uploads (archivos subidos por usuarios)
 thesia-backend/uploads/
+
+# Ignorar .gitignore anidados (para evitar conflictos)
+thesia-frontend/.gitignore
+thesia-backend/.gitignore
