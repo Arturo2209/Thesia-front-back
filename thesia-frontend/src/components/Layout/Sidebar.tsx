@@ -37,10 +37,40 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
       .substring(0, 2);
   };
 
-  // 🎯 FUNCIÓN DE NAVEGACIÓN CON LOGS
+  // 🔧 FUNCIÓN DE NAVEGACIÓN CORREGIDA
   const handleNavigation = (path: string) => {
     console.log(`🎯 Sidebar navegando a: ${path}`);
+    
+    // Verificar si el perfil está completo para ciertas rutas
+    const user = authService.getStoredUser();
+    // 🔧 CORREGIDO: Ahora puede acceder a codigo_estudiante
+    const profileIncomplete = !user?.carrera || !user?.codigo_estudiante;
+    
+    const restrictedRoutes = ['/progreso', '/mis-documentos', '/mi-asesor', '/notificaciones'];
+    
+    if (profileIncomplete && restrictedRoutes.includes(path)) {
+      console.log('🚫 Perfil incompleto - Redirigiendo a completar perfil');
+      navigate('/complete-profile');
+      return;
+    }
+    
     navigate(path);
+  };
+
+  // 🔧 FUNCIÓN PARA OBTENER CLASE CON RESTRICCIONES
+  const getNavItemClass = (path: string) => {
+    const user = authService.getStoredUser();
+    const profileIncomplete = !user?.carrera || !user?.codigo_estudiante;
+    const restrictedRoutes = ['/progreso', '/mis-documentos', '/mi-asesor', '/notificaciones'];
+    
+    const isRestricted = profileIncomplete && restrictedRoutes.includes(path);
+    const isCurrentPath = location.pathname === path;
+    
+    let className = 'nav-item';
+    if (isCurrentPath) className += ' active';
+    if (isRestricted) className += ' restricted';
+    
+    return className;
   };
 
   return (
@@ -67,33 +97,30 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
           <span className="nav-text">Inicio</span>
         </div>
         
-        <div className={getActiveClass('/progreso')} onClick={() => handleNavigation('/progreso')}>
+        {/* 🔧 CORREGIDO: Usar getNavItemClass para mostrar restricciones */}
+        <div className={getNavItemClass('/progreso')} onClick={() => handleNavigation('/progreso')}>
           <span className="nav-icon">📈</span>
           <span className="nav-text">Progreso</span>
         </div>
         
-        {/* 🔧 CORREGIDO: Navegar a /mi-tesis */}
         <div className={getActiveClass('/mi-tesis')} onClick={() => handleNavigation('/mi-tesis')}>
           <span className="nav-icon">📝</span>
           <span className="nav-text">Mi Tesis</span>
         </div>
         
-        <div className={getActiveClass('/mis-documentos')} onClick={() => handleNavigation('/mis-documentos')}>
+        <div className={getNavItemClass('/mis-documentos')} onClick={() => handleNavigation('/mis-documentos')}>
           <span className="nav-icon">📄</span>
           <span className="nav-text">Documentos</span>
         </div>
         
-        <div className={getActiveClass('/mi-asesor')} onClick={() => handleNavigation('/mi-asesor')}>
+        <div className={getNavItemClass('/mi-asesor')} onClick={() => handleNavigation('/mi-asesor')}>
           <span className="nav-icon">👨‍🏫</span>
           <span className="nav-text">Mi Asesor</span>
         </div>
         
-        <div className={getActiveClass('/mi-calendario')} onClick={() => handleNavigation('/mi-calendario')}>
-          <span className="nav-icon">📅</span>
-          <span className="nav-text">Calendario</span>
-        </div>
         
-        <div className={getActiveClass('/notificaciones')} onClick={() => handleNavigation('/notificaciones')}>
+        
+        <div className={getNavItemClass('/notificaciones')} onClick={() => handleNavigation('/notificaciones')}>
           <span className="nav-icon">🔔</span>
           <span className="nav-text">Notificaciones</span>
         </div>
@@ -159,7 +186,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
           justify-content: flex-start;
         }
 
-        /* 🎨 LOGO ALINEADO A LA IZQUIERDA */
         .sidebar-logo {
           width: 120px;
           height: auto;
@@ -190,6 +216,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
           user-select: none;
           margin: 2px 12px;
           border-radius: 8px;
+          position: relative;
         }
 
         .nav-item:hover {
@@ -200,6 +227,24 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
         .nav-item.active {
           background: rgba(255,255,255,0.15);
           box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* 🔒 ESTILOS PARA SECCIONES RESTRINGIDAS */
+        .nav-item.restricted {
+          opacity: 0.5;
+          cursor: not-allowed !important;
+        }
+
+        .nav-item.restricted::after {
+          content: '🔒';
+          position: absolute;
+          right: 20px;
+          font-size: 14px;
+        }
+
+        .nav-item.restricted:hover {
+          background: rgba(255,255,255,0.05) !important;
+          transform: none !important;
         }
 
         .nav-icon {
@@ -284,7 +329,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
           transform: translateY(-2px);
         }
 
-        /* 📱 RESPONSIVE */
         @media (max-width: 1024px) {
           .sidebar {
             width: 260px;

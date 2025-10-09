@@ -1,13 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './components/Auth/Login';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
-import MiPerfil from './components/Profile/MiPerfil';
 import CompleteProfile from './components/Profile/CompleteProfile';
 import Dashboard from './components/Dashboard/Dashboard';
 import MyThesis from './components/Thesis/MyThesis';
 import MisDocumentos from './components/Documents/MisDocumentos';
 import MiAsesor from './components/Advisor/MiAsesor';
-import MiCalendario from './components/Calendar/MiCalendario';
 import ProgresoTesis from './components/Progress/ProgresoTesis';
 import RecursoGuia from './components/Progress/RecursoGuia';
 import Notificaciones from './components/Notifications/Notificaciones';
@@ -33,11 +31,7 @@ function App() {
           </ProtectedRoute>
         } />
         
-        <Route path="/mi-perfil" element={
-          <ProtectedRoute>
-            <MiPerfil />
-          </ProtectedRoute>
-        } />
+        
         
         {/* 📖 NUEVA RUTA: Mi Tesis (inteligente - formulario o vista) */}
         <Route path="/mi-tesis" element={
@@ -58,11 +52,6 @@ function App() {
           </ProtectedRoute>
         } />
         
-        <Route path="/mi-calendario" element={
-          <ProtectedRoute>
-            <MiCalendario />
-          </ProtectedRoute>
-        } />
         
         <Route path="/progreso" element={
           <ProtectedRoute>
