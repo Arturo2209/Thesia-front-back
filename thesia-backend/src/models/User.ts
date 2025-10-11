@@ -14,6 +14,7 @@ interface UserAttributes {
   telefono?: string;
   codigo_estudiante?: string;
   especialidad?: string;
+  ciclo_actual?: number;  // 🔧 NUEVO CAMPO
   rol: 'estudiante' | 'asesor' | 'coordinador';
   estado: 'activo' | 'inactivo';
   primer_acceso: boolean;
@@ -26,12 +27,11 @@ interface UserAttributes {
 // Interfaz para creación (sin campos auto-generados)
 interface UserCreationAttributes extends Optional<UserAttributes, 
   'id_usuario' | 'contraseña' | 'google_id' | 'avatar_url' | 'telefono' | 
-  'codigo_estudiante' | 'especialidad' | 'fecha_ultimo_acceso' | 
+  'codigo_estudiante' | 'especialidad' | 'ciclo_actual' | 'fecha_ultimo_acceso' | 
   'fecha_creacion' | 'fecha_modificacion'> {}
 
-// 🔧 MODELO SIN PUBLIC CLASS FIELDS (evitar warnings)
+// 🔧 MODELO CORREGIDO
 class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
-  // 🚫 REMOVER declaraciones public - dejar que Sequelize las maneje
   declare id_usuario: number;
   declare nombre: string;
   declare apellido: string;
@@ -43,6 +43,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   declare telefono?: string;
   declare codigo_estudiante?: string;
   declare especialidad?: string;
+  declare ciclo_actual?: number;  // 🔧 NUEVO CAMPO
   declare rol: 'estudiante' | 'asesor' | 'coordinador';
   declare estado: 'activo' | 'inactivo';
   declare primer_acceso: boolean;
@@ -51,28 +52,24 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   declare fecha_creacion: Date;
   declare fecha_modificacion: Date;
 
-  // Método para obtener datos para JWT (formato compatible con frontend)
+  // 🔧 MÉTODO toJWT ACTUALIZADO para frontend
   public toJWT(): any {
     return {
+      id: this.id_usuario,
       email: this.correo_institucional,
-      name: `${this.nombre} ${this.apellido}`,
+      name: this.nombre,  // Solo nombre, no concatenar
       picture: this.avatar_url,
       role: this.rol,
       isVerified: this.estado === 'activo',
-      profileCompleted: !this.primer_acceso, // Si NO es primer acceso = perfil completo
-      carrera: this.especialidad, // Para asesores será su especialidad
-      ciclo: this.codigo_estudiante ? this.extractCicloFromCode(this.codigo_estudiante) : undefined
+      profileCompleted: !this.primer_acceso,
+      carrera: this.especialidad,
+      ciclo: this.ciclo_actual,
+      codigo_estudiante: this.codigo_estudiante,
+      telefono: this.telefono
     };
   }
 
-  // Extraer ciclo del código de estudiante (lógica personalizable)
-  private extractCicloFromCode(codigo: string): number {
-    // Por ejemplo, si el código tiene info del ciclo, sino defaultear a 1
-    // Esto lo puedes personalizar según tu lógica de códigos
-    return 1; // Default por ahora
-  }
-
-  // 🔧 MÉTODO MEJORADO: Buscar o crear usuario con Google (con mejor manejo de errores)
+  // 🔧 MÉTODO MEJORADO: Buscar o crear usuario con Google
   static async findOrCreateByGoogle(googleData: {
     email: string;
     name: string;
@@ -113,7 +110,6 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
 
       if (user) {
         console.log('👤 Usuario encontrado por Google ID pero email diferente');
-        // Actualizar email si es necesario
         user.correo_institucional = googleData.email;
         user.fecha_modificacion = new Date();
         await user.save();
@@ -123,20 +119,17 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
       // Crear nuevo usuario
       console.log('➕ Creando nuevo usuario...');
       
-      const nameParts = googleData.name.split(' ');
-      const nombre = nameParts[0] || '';
-      const apellido = nameParts.slice(1).join(' ') || '';
-
+      // 🔧 USAR SOLO EL NOMBRE, NO DIVIDIR
       const newUser = await User.create({
-        nombre,
-        apellido,
+        nombre: googleData.name,  // Guardar nombre completo
+        apellido: '',  // Dejar vacío por ahora
         correo_institucional: googleData.email,
         google_id: googleData.googleId,
         avatar_url: googleData.picture,
         provider: 'google',
         rol: User.determineRole(googleData.email),
         estado: 'activo',
-        primer_acceso: true, // TRUE = necesita completar perfil
+        primer_acceso: true,
         fecha_registro: new Date(),
         fecha_creacion: new Date(),
         fecha_modificacion: new Date()
@@ -145,6 +138,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
       console.log('✅ Nuevo usuario creado exitosamente:', {
         id: newUser.id_usuario,
         email: newUser.correo_institucional,
+        nombre: newUser.nombre,
         rol: newUser.rol
       });
 
@@ -166,32 +160,67 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
     return 'estudiante';
   }
 
-  // Método para actualizar perfil después del primer login
+  // 🔧 MÉTODO updateProfile CORREGIDO - AHORA ACEPTA APELLIDO
   async updateProfile(profileData: {
     carrera?: string;
     ciclo?: number;
+    codigo_estudiante?: string;
+    nombre?: string;
+    apellido?: string;    // 🔧 NUEVO CAMPO AGREGADO
     telefono?: string;
   }) {
     try {
-      // Para estudiantes, actualizar código y especialidad como carrera
-      if (this.rol === 'estudiante') {
-        this.codigo_estudiante = this.codigo_estudiante || `EST${new Date().getFullYear()}${String(this.id_usuario).padStart(3, '0')}`;
-        // La especialidad puede representar la carrera del estudiante
+      console.log('🔧 updateProfile - Datos recibidos:', profileData);
+
+      // 🔧 ACTUALIZAR TODOS LOS CAMPOS QUE LLEGUEN
+      if (profileData.carrera) {
         this.especialidad = profileData.carrera;
+        console.log('✅ Especialidad/Carrera actualizada:', this.especialidad);
       }
 
-      this.telefono = profileData.telefono || this.telefono;
-      this.primer_acceso = false; // Ya no es primer acceso
+      if (profileData.ciclo) {
+        this.ciclo_actual = profileData.ciclo;
+        console.log('✅ Ciclo actual actualizado:', this.ciclo_actual);
+      }
+
+      if (profileData.codigo_estudiante) {
+        this.codigo_estudiante = profileData.codigo_estudiante;
+        console.log('✅ Código de estudiante actualizado:', this.codigo_estudiante);
+      }
+
+      if (profileData.nombre) {
+        this.nombre = profileData.nombre;
+        console.log('✅ Nombre actualizado:', this.nombre);
+      }
+
+      // 🔧 NUEVO: ACTUALIZAR APELLIDO
+      if (profileData.apellido) {
+        this.apellido = profileData.apellido;
+        console.log('✅ Apellido actualizado:', this.apellido);
+      }
+
+      if (profileData.telefono) {
+        this.telefono = profileData.telefono;
+        console.log('✅ Teléfono actualizado:', this.telefono);
+      }
+
+      // Marcar como perfil completado
+      this.primer_acceso = false;
       this.fecha_ultimo_acceso = new Date();
       this.fecha_modificacion = new Date();
 
-      await this.save();
-      
-      console.log('✅ Perfil actualizado en BD:', {
-        id: this.id_usuario,
+      console.log('💾 Guardando en BD - Datos finales:', {
+        nombre: this.nombre,
+        apellido: this.apellido,  // 🔧 NUEVO LOG
+        codigo_estudiante: this.codigo_estudiante,
         especialidad: this.especialidad,
+        ciclo_actual: this.ciclo_actual,
         primer_acceso: this.primer_acceso
       });
+
+      await this.save();
+      
+      console.log('✅ Perfil actualizado y guardado exitosamente en BD');
       
       return this;
     } catch (error) {
@@ -201,7 +230,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   }
 }
 
-// Definir el modelo en Sequelize usando tu estructura existente
+// 🔧 DEFINICIÓN SEQUELIZE ACTUALIZADA CON ciclo_actual
 User.init({
   id_usuario: {
     type: DataTypes.INTEGER,
@@ -243,7 +272,7 @@ User.init({
   avatar_url: {
     type: DataTypes.STRING(500),
     allowNull: true,
-    comment: 'URL de foto de perfil'
+    comment: 'URL de foto de perfil de Google'
   },
   provider: {
     type: DataTypes.ENUM('google', 'manual'),
@@ -263,6 +292,12 @@ User.init({
     type: DataTypes.STRING(100),
     allowNull: true,
     comment: 'Para asesores o carrera para estudiantes'
+  },
+  ciclo_actual: {  // 🔧 NUEVO CAMPO
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 1,
+    comment: 'Ciclo académico actual del estudiante'
   },
   rol: {
     type: DataTypes.ENUM('estudiante', 'asesor', 'coordinador'),
@@ -301,8 +336,8 @@ User.init({
 }, {
   sequelize,
   modelName: 'User',
-  tableName: 'usuario', // 👈 Usar tu tabla existente
-  timestamps: false, // 👈 Manejar timestamps manualmente
+  tableName: 'usuario',
+  timestamps: false,
   indexes: [
     {
       unique: true,

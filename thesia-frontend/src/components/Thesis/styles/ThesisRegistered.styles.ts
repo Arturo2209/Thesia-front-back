@@ -109,6 +109,7 @@ export const thesisRegisteredStyles = `
     display: flex;
     flex-direction: column;
     gap: 20px;
+    min-width: 0; /* 🔧 PERMITE QUE EL CONTENIDO SE COMPRIMA */
   }
 
   .info-card {
@@ -117,6 +118,7 @@ export const thesisRegisteredStyles = `
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     overflow: hidden;
     transition: transform 0.2s, box-shadow 0.2s;
+    min-width: 0; /* 🔧 PERMITE QUE EL CONTENIDO SE COMPRIMA */
   }
 
   .info-card:hover {
@@ -139,6 +141,7 @@ export const thesisRegisteredStyles = `
 
   .card-content {
     padding: 20px;
+    min-width: 0; /* 🔧 PERMITE QUE EL CONTENIDO SE COMPRIMA */
   }
 
   .card-content p {
@@ -146,6 +149,13 @@ export const thesisRegisteredStyles = `
     color: #4b5563;
     line-height: 1.6;
     font-size: 14px;
+    /* 🔧 PROPIEDADES PARA WRAP DE TEXTO */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: pre-wrap; /* Respeta saltos de línea del usuario */
+    max-width: 100%;
+    hyphens: auto; /* Divide palabras largas automáticamente */
   }
 
   .edit-button-container {
@@ -183,6 +193,7 @@ export const thesisRegisteredStyles = `
   .advisor-info-section {
     display: flex;
     flex-direction: column;
+    min-width: 0; /* 🔧 PERMITE QUE EL CONTENIDO SE COMPRIMA */
   }
 
   .advisor-card-large {
@@ -192,6 +203,7 @@ export const thesisRegisteredStyles = `
     overflow: hidden;
     height: fit-content;
     transition: transform 0.2s, box-shadow 0.2s;
+    min-width: 0; /* 🔧 PERMITE QUE EL CONTENIDO SE COMPRIMA */
   }
 
   .advisor-card-large:hover {
@@ -217,11 +229,15 @@ export const thesisRegisteredStyles = `
     margin: 0;
     font-size: 18px;
     font-weight: 600;
+    /* 🔧 WRAP PARA TÍTULOS LARGOS */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
 
   .advisor-details {
     padding: 24px;
     text-align: center;
+    min-width: 0; /* 🔧 PERMITE QUE EL CONTENIDO SE COMPRIMA */
   }
 
   .advisor-avatar-large {
@@ -247,6 +263,10 @@ export const thesisRegisteredStyles = `
     color: #1f2937;
     font-size: 18px;
     font-weight: 600;
+    /* 🔧 WRAP PARA NOMBRES LARGOS */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.3;
   }
 
   .advisor-specialty {
@@ -258,6 +278,10 @@ export const thesisRegisteredStyles = `
     padding: 4px 12px;
     border-radius: 20px;
     display: inline-block;
+    /* 🔧 WRAP PARA ESPECIALIDADES LARGAS */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
   }
 
   .advisor-contact {
@@ -271,10 +295,23 @@ export const thesisRegisteredStyles = `
     background: #f9fafb;
     padding: 8px 16px;
     border-radius: 8px;
+    /* 🔧 WRAP PARA EMAILS LARGOS */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    min-width: 0;
+    flex-wrap: wrap; /* Permite que el contenido se envuelva si es necesario */
   }
 
   .email-icon {
     font-size: 16px;
+    flex-shrink: 0; /* El icono no se encoge */
+  }
+
+  .advisor-contact span:last-child {
+    /* 🔧 EL EMAIL PUEDE HACER WRAP */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    min-width: 0;
   }
 
   .advisor-description {
@@ -291,6 +328,20 @@ export const thesisRegisteredStyles = `
     background: #f8fafc;
     border-radius: 8px;
     border-left: 4px solid #3b82f6;
+    /* 🔧 PROPIEDADES PARA WRAP DE TEXTO EN DESCRIPCIÓN */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: pre-wrap;
+    max-width: 100%;
+    hyphens: auto;
+  }
+
+  /* === MEJORAS ADICIONALES PARA LAYOUT === */
+  .thesis-layout {
+    /* 🔧 ASEGURAR QUE EL GRID NO SE DESBORDE */
+    overflow: hidden;
+    min-width: 0;
   }
 
   /* Responsive */
@@ -318,6 +369,12 @@ export const thesisRegisteredStyles = `
     .advisor-card-large {
       max-width: 600px;
       margin: 0 auto;
+    }
+
+    /* 🔧 EN MOBILE, EL TEXTO TIENE MÁS ESPACIO */
+    .card-content p {
+      font-size: 15px;
+      line-height: 1.7;
     }
   }
 
@@ -358,6 +415,22 @@ export const thesisRegisteredStyles = `
     .avatar-initials {
       font-size: 24px;
     }
+
+    /* 🔧 AJUSTES PARA TEXTO EN MOBILE */
+    .card-content {
+      padding: 16px;
+    }
+
+    .card-content p {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .advisor-contact {
+      flex-direction: column;
+      gap: 4px;
+      text-align: center;
+    }
   }
 
   @media (max-width: 480px) {
@@ -380,6 +453,16 @@ export const thesisRegisteredStyles = `
     .card-content,
     .advisor-details {
       padding: 16px;
+    }
+
+    /* 🔧 TEXTO MÁS PEQUEÑO EN PANTALLAS MUY PEQUEÑAS */
+    .card-content p {
+      font-size: 13px;
+    }
+
+    .advisor-description p {
+      font-size: 13px;
+      padding: 12px;
     }
   }
 `;

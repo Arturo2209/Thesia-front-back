@@ -1,3 +1,5 @@
+import { apiService } from './api';
+
 interface AuthResponse {
   success: boolean;
   message?: string;
@@ -14,7 +16,7 @@ export interface User {
   role: 'estudiante' | 'asesor' | 'coordinador';
   isVerified?: boolean;
   profileCompleted?: boolean;
-  // 🆕 NUEVOS CAMPOS AGREGADOS:
+  // Campos adicionales:
   carrera?: string;
   ciclo?: number;
   codigo_estudiante?: string;
@@ -22,7 +24,6 @@ export interface User {
   especialidad?: string;
 }
 
-// 🆕 NUEVO INTERFACE PARA ACTUALIZAR PERFIL
 export interface UpdateProfileResponse {
   success: boolean;
   message?: string;
@@ -30,7 +31,21 @@ export interface UpdateProfileResponse {
   token?: string;
 }
 
+// Interfaces para login tradicional
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  success: boolean;
+  message: string;
+  token?: string;
+  user?: User;
+}
+
 export const authService = {
+  // ========== MÉTODOS PARA GOOGLE AUTH ==========
   verifyGoogleToken: async (token: string): Promise<AuthResponse> => {
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/auth/google/verify`, {
@@ -50,7 +65,7 @@ export const authService = {
       if (data.success && data.token) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        console.log('💾 Datos guardados en localStorage');
+        console.log('💾 Datos guardados en localStorage (Google)');
         console.log('🎯 Es primer login:', data.isFirstLogin);
       }
 
@@ -61,6 +76,53 @@ export const authService = {
     }
   },
 
+  // ========== MÉTODOS PARA LOGIN TRADICIONAL ==========
+  login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
+    try {
+      console.log('🔐 === INICIANDO LOGIN TRADICIONAL ===');
+      console.log('📧 Email:', credentials.email);
+      
+      const response = await apiService.post<LoginResponse>('/auth/login', credentials);
+      
+      console.log('📊 Respuesta del servidor:', {
+        success: response.success,
+        token: response.token ? 'Presente' : 'Ausente',
+        user: response.user ? response.user.email : 'Sin usuario'
+      });
+
+      if (response.success && response.token && response.user) {
+        // Guardar token y usuario en localStorage
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        
+        console.log('✅ === LOGIN TRADICIONAL EXITOSO ===');
+        console.log('💾 Token guardado:', response.token.substring(0, 20) + '...');
+        console.log('👤 Usuario guardado:', response.user.email);
+        
+        // Verificar que se guardó correctamente
+        const savedToken = localStorage.getItem('token');
+        const savedUser = localStorage.getItem('user');
+        console.log('🔍 Verificación almacenamiento:', {
+          tokenSaved: savedToken ? 'Sí' : 'No',
+          userSaved: savedUser ? 'Sí' : 'No'
+        });
+      } else {
+        console.log('❌ Login tradicional fallido:', response.message);
+      }
+
+      return response;
+    } catch (error: any) {
+      console.error('❌ === ERROR EN LOGIN TRADICIONAL ===');
+      console.error('Error completo:', error);
+      
+      throw error.response?.data || { 
+        success: false, 
+        message: 'Error de conexión con el servidor' 
+      };
+    }
+  },
+
+  // ========== MÉTODOS COMUNES ==========
   getCurrentUser: async (): Promise<User | null> => {
     try {
       const token = authService.getToken();
@@ -86,21 +148,38 @@ export const authService = {
   getStoredUser: (): User | null => {
     try {
       const userStr = localStorage.getItem('user');
-      return userStr ? JSON.parse(userStr) : null;
+      if (!userStr) {
+        console.log('👤 No hay usuario en localStorage');
+        return null;
+      }
+      
+      const user = JSON.parse(userStr);
+      console.log('👤 Usuario actual obtenido:', user.email, '- Rol:', user.role);
+      return user;
     } catch (error) {
-      console.error('Error parsing stored user:', error);
+      console.error('❌ Error obteniendo usuario actual:', error);
+      localStorage.removeItem('user'); // Limpiar dato corrupto
       return null;
     }
   },
 
   getToken: (): string | null => {
-    return localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    console.log('🎫 Token disponible:', token ? 'Sí (' + token.substring(0, 20) + '...)' : 'No');
+    return token;
   },
 
   isAuthenticated: (): boolean => {
     const token = authService.getToken();
     const user = authService.getStoredUser();
-    return !!(token && user);
+    const isAuth = !!(token && user);
+    
+    console.log('🔍 === VERIFICANDO AUTENTICACIÓN ===');
+    console.log('Token presente:', token ? 'Sí' : 'No');
+    console.log('Usuario presente:', user ? 'Sí' : 'No');
+    console.log('¿Está autenticado?', isAuth ? 'SÍ' : 'NO');
+    
+    return isAuth;
   },
 
   isProfileCompleted: (): boolean => {
@@ -108,13 +187,12 @@ export const authService = {
     return !!(user?.profileCompleted || (user?.carrera && user?.codigo_estudiante));
   },
 
-  // 🔧 MÉTODO ACTUALIZADO PARA COMPLETAR PERFIL CON APELLIDO
   updateUserProfile: async (profileData: {
     carrera: string;
     ciclo: number;
     codigo_estudiante?: string;
     nombre?: string;
-    apellido?: string;  // 🔧 NUEVO CAMPO AGREGADO
+    apellido?: string;
   }): Promise<UpdateProfileResponse> => {
     try {
       const token = authService.getToken();
@@ -125,19 +203,13 @@ export const authService = {
 
       console.log('📤 === ENVIANDO AL SERVIDOR (authService) ===');
       console.log('Datos completos a enviar:', profileData);
-      console.log('nombre:', profileData.nombre);
-      console.log('apellido:', profileData.apellido);  // 🔧 NUEVO LOG
-      console.log('carrera:', profileData.carrera);
-      console.log('ciclo:', profileData.ciclo);
-      console.log('codigo_estudiante:', profileData.codigo_estudiante);
-      console.log('===========================================');
 
       const requestBody = {
         carrera: profileData.carrera,
         ciclo: profileData.ciclo,
         codigo_estudiante: profileData.codigo_estudiante,
         nombre: profileData.nombre,
-        apellido: profileData.apellido,  // 🔧 INCLUIR APELLIDO EN EL REQUEST
+        apellido: profileData.apellido,
         profileCompleted: true
       };
 
@@ -162,16 +234,8 @@ export const authService = {
 
       const data: UpdateProfileResponse = await response.json();
 
-      console.log('📥 === RESPUESTA DEL SERVIDOR (authService) ===');
+      console.log('📥 === RESPUESTA DEL SERVIDOR ===');
       console.log('Data completa recibida:', data);
-      if (data.user) {
-        console.log('Usuario actualizado:', data.user);
-        console.log('nombre en respuesta:', data.user.name);
-        console.log('codigo_estudiante en respuesta:', data.user.codigo_estudiante);
-        console.log('carrera en respuesta:', data.user.carrera);
-        console.log('profileCompleted en respuesta:', data.user.profileCompleted);
-      }
-      console.log('===============================================');
 
       if (data.success && data.user) {
         // Actualizar datos locales
@@ -196,8 +260,28 @@ export const authService = {
     }
   },
 
+  // Verificar token (llamada al backend)
+  verifyToken: async (): Promise<{ valid: boolean; user?: User }> => {
+    try {
+      console.log('🔍 Verificando token con el servidor...');
+      
+      const response = await apiService.get<{ success: boolean; user: User }>('/auth/verify');
+      
+      console.log('✅ Token válido:', response.user?.email);
+      return {
+        valid: response.success,
+        user: response.user
+      };
+    } catch (error) {
+      console.error('❌ Token inválido o expirado:', error);
+      return { valid: false };
+    }
+  },
+
   logout: async (): Promise<void> => {
     try {
+      console.log('🚪 === CERRANDO SESIÓN ===');
+      
       const token = authService.getToken();
       if (token) {
         await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/auth/logout`, {
@@ -212,9 +296,17 @@ export const authService = {
     } finally {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      console.log('✅ Sesión cerrada correctamente');
     }
   }
 };
+
+// Exportaciones individuales para compatibilidad
+export const login = authService.login;
+export const logout = authService.logout;
+export const getCurrentUser = authService.getCurrentUser;
+export const getToken = authService.getToken;
+export const isAuthenticated = authService.isAuthenticated;
 
 export default authService;
 export type { AuthResponse };

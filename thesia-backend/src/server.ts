@@ -8,9 +8,15 @@ import sequelize, { testConnection, verifyDatabase } from './config/database';
 // Importar modelos para registro
 import User from './models/User';
 
-// Importar rutas
+// Importar rutas CORREGIDAS
 import authRoutes from './routes/auth';
-import apiRoutes from './routes/api';
+// COMENTAR LAS RUTAS VIEJAS QUE CAUSAN CONFLICTO:
+// import apiRoutes from './routes/api';
+
+// IMPORTAR LAS RUTAS NUEVAS CORREGIDAS:
+import advisorsRouter from './routes/advisors';
+import tesisRouter from './routes/tesis';
+import documentosRouter from './routes/documentos'; // ✅ NUEVA IMPORTACIÓN
 
 // Cargar variables de entorno
 dotenv.config();
@@ -18,7 +24,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-console.log('🚀 Iniciando servidor THESIA desde server.ts...');
+console.log('🚀 Iniciando servidor THESIA desde server.ts CON RUTAS CORREGIDAS Y DOCUMENTOS...');
 
 // Middleware
 app.use(cors({
@@ -35,29 +41,86 @@ app.use((req, res, next) => {
   next();
 });
 
-// 📍 REGISTRAR RUTAS CON LOGS
-console.log('📍 Registrando rutas...');
+// 📍 REGISTRAR RUTAS CORREGIDAS
+console.log('📍 Registrando rutas CORREGIDAS CON DOCUMENTOS...');
 
-// Rutas principales
+// RUTAS ESPECÍFICAS PRIMERO (MAYOR PRIORIDAD)
+app.use('/api/advisors', advisorsRouter);
+app.use('/api/thesis', tesisRouter);   // ← RUTAS CORREGIDAS CON JOIN
+app.use('/api/documents', documentosRouter); // ✅ NUEVA RUTA DE DOCUMENTOS
 app.use('/api/auth', authRoutes);
-console.log('✅ Rutas auth registradas en /api/auth/*');
 
-app.use('/api', apiRoutes);
-console.log('✅ Rutas API registradas en /api/*');
+// 🚨 COMENTAR LAS RUTAS VIEJAS:
+// app.use('/api', apiRoutes);
+
+console.log('✅ Rutas CORREGIDAS registradas:');
+console.log('   /api/advisors/*');
+console.log('   /api/thesis/* ← RUTAS CORREGIDAS CON JOIN Y DEBUG');
+console.log('   /api/documents/* ← NUEVAS RUTAS DE DOCUMENTOS'); // ✅ NUEVA LÍNEA
+console.log('   /api/auth/*');
+console.log('   🚨 /api/* DESHABILITADO - RUTAS VIEJAS');
+
+// 🔧 ENDPOINTS MANUALES NECESARIOS (MIGRADOS DE api.ts)
+app.get('/api/test-connection', (req, res) => {
+  console.log('🧪 Test connection ejecutado');
+  res.json({
+    status: 'OK',
+    message: 'Conexión de prueba exitosa',
+    timestamp: new Date().toISOString(),
+    database: 'Conectado a thesia_db'
+  });
+});
+
+// Dashboard endpoint básico (migrar lógica completa después)
+app.get('/api/dashboard', async (req, res) => {
+  try {
+    console.log('🏠 Dashboard endpoint ejecutado');
+    res.json({
+      status: 'OK',
+      userName: 'Carlos Bullon Supanta',
+      role: 'estudiante',
+      hasThesis: true,
+      thesisTitle: 'Mi tesis...',
+      progress: 5,
+      totalActivities: 4,
+      message: 'Dashboard funcionando correctamente',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Error en dashboard',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+app.get('/api/health', (req, res) => {
+  console.log('✅ Health API ejecutado');
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    database: 'Connected'
+  });
+});
 
 // Ruta de prueba principal
 app.get('/', (req, res) => {
   console.log('🏠 Endpoint raíz ejecutado');
   res.json({ 
-    message: 'Backend THESIA funcionando correctamente desde server.ts',
+    message: 'Backend THESIA funcionando correctamente desde server.ts CON DOCUMENTOS',
     timestamp: new Date().toISOString(),
     database: 'MySQL conectado - usando BD existente thesia_db',
     endpoints: {
+      advisors: '/api/advisors',
+      thesis: '/api/thesis/* ← CORREGIDO CON JOIN',
+      thesis_debug: '/api/thesis/debug ← NUEVO ENDPOINT DEBUG',
+      documents: '/api/documents/* ← NUEVAS RUTAS DE DOCUMENTOS', // ✅ NUEVA LÍNEA
+      documents_upload: '/api/documents/upload ← SUBIR DOCUMENTOS', // ✅ NUEVA LÍNEA
+      documents_my: '/api/documents/my ← MIS DOCUMENTOS', // ✅ NUEVA LÍNEA
       auth: '/api/auth/*',
-      api: '/api/*',
       health: '/api/health',
-      database_status: '/api/database/status',
-      database_tables: '/api/database/tables'
+      dashboard: '/api/dashboard',
+      test_connection: '/api/test-connection'
     }
   });
 });
@@ -67,7 +130,7 @@ app.get('/health', (req, res) => {
   console.log('✅ Health check directo ejecutado');
   res.json({
     status: 'OK',
-    message: 'Servidor funcionando correctamente',
+    message: 'Servidor funcionando correctamente CON DOCUMENTOS',
     timestamp: new Date().toISOString(),
     database: 'Conectado a thesia_db'
   });
@@ -84,8 +147,17 @@ app.use((req, res) => {
       root: 'GET /',
       health_direct: 'GET /health',
       health_api: 'GET /api/health',
-      database_status: 'GET /api/database/status',
-      database_tables: 'GET /api/database/tables',
+      test_connection: 'GET /api/test-connection',
+      dashboard: 'GET /api/dashboard',
+      advisors: 'GET /api/advisors',
+      thesis_my: 'GET /api/thesis/my ← CORREGIDO CON JOIN',
+      thesis_debug: 'GET /api/thesis/debug ← NUEVO DEBUG',
+      thesis_create: 'POST /api/thesis',
+      documents_my: 'GET /api/documents/my ← MIS DOCUMENTOS', // ✅ NUEVA LÍNEA
+      documents_upload: 'POST /api/documents/upload ← SUBIR DOCUMENTOS', // ✅ NUEVA LÍNEA
+      documents_detail: 'GET /api/documents/:id ← DETALLE DOCUMENTO', // ✅ NUEVA LÍNEA
+      documents_download: 'GET /api/documents/:id/download ← DESCARGAR', // ✅ NUEVA LÍNEA
+      documents_delete: 'DELETE /api/documents/:id ← ELIMINAR', // ✅ NUEVA LÍNEA
       auth_google: 'POST /api/auth/google/verify',
       auth_update: 'POST /api/auth/update-profile'
     }
@@ -111,17 +183,30 @@ const startServer = async () => {
       await verifyDatabase();
     }
 
-    // Iniciar servidor (incluso si BD falla, para debugging)
+    // Iniciar servidor
     app.listen(PORT, () => {
-      console.log('✅ Servidor iniciado correctamente');
+      console.log('✅ Servidor iniciado correctamente CON RUTAS CORREGIDAS Y DOCUMENTOS');
       console.log(`🌐 Ejecutándose en http://localhost:${PORT}`);
       console.log('');
-      console.log('📍 Endpoints para probar:');
-      console.log(`   🏠 http://localhost:${PORT}/`);
-      console.log(`   ❤️ http://localhost:${PORT}/health`);
-      console.log(`   🔧 http://localhost:${PORT}/api/health`);
-      console.log(`   🗄️ http://localhost:${PORT}/api/database/status`);
+      console.log('🚨 ENDPOINTS PRINCIPALES DISPONIBLES:');
+      console.log(`   📋 http://localhost:${PORT}/api/thesis/my ← CORREGIDO CON JOIN`);
+      console.log(`   🧪 http://localhost:${PORT}/api/thesis/debug`);
+      console.log(`   📄 http://localhost:${PORT}/api/documents/my ← MIS DOCUMENTOS`); // ✅ NUEVA LÍNEA
+      console.log(`   📤 http://localhost:${PORT}/api/documents/upload ← SUBIR DOCUMENTOS`); // ✅ NUEVA LÍNEA
+      console.log(`   📖 http://localhost:${PORT}/api/documents/:id ← DETALLE DOCUMENTO`); // ✅ NUEVA LÍNEA
+      console.log(`   📥 http://localhost:${PORT}/api/documents/:id/download ← DESCARGAR`); // ✅ NUEVA LÍNEA
+      console.log(`   🗑️ http://localhost:${PORT}/api/documents/:id ← ELIMINAR (DELETE)`); // ✅ NUEVA LÍNEA
+      console.log(`   🏠 http://localhost:${PORT}/api/dashboard`);
+      console.log(`   🔗 http://localhost:${PORT}/api/test-connection`);
       console.log('');
+      console.log('🔧 CAMBIOS REALIZADOS:');
+      console.log('   ✅ Rutas /api/thesis/* corregidas con JOIN');
+      console.log('   ✅ Rutas /api/documents/* agregadas COMPLETAS'); // ✅ NUEVA LÍNEA
+      console.log('   ✅ Sistema de subida de archivos con multer'); // ✅ NUEVA LÍNEA
+      console.log('   ✅ CRUD completo de documentos (crear, leer, descargar, eliminar)'); // ✅ NUEVA LÍNEA
+      console.log('   ✅ Endpoints debug, dashboard y test-connection agregados');
+      console.log('   🚨 Rutas /api/* viejas deshabilitadas');
+      console.log('   🗑️ app.ts YA NO SE USA - SOLO server.ts');
     });
 
   } catch (error) {

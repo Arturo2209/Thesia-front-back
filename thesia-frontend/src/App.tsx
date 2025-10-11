@@ -4,7 +4,7 @@ import ProtectedRoute from './components/Auth/ProtectedRoute';
 import CompleteProfile from './components/Profile/CompleteProfile';
 import Dashboard from './components/Dashboard/Dashboard';
 import MyThesis from './components/Thesis/MyThesis';
-import MisDocumentos from './components/Documents/MisDocumentos';
+import Documents from './components/Documents/Documents'; // ✅ CAMBIO: Import correcto
 import MiAsesor from './components/Advisor/MiAsesor';
 import ProgresoTesis from './components/Progress/ProgresoTesis';
 import RecursoGuia from './components/Progress/RecursoGuia';
@@ -31,8 +31,6 @@ function App() {
           </ProtectedRoute>
         } />
         
-        
-        
         {/* 📖 NUEVA RUTA: Mi Tesis (inteligente - formulario o vista) */}
         <Route path="/mi-tesis" element={
           <ProtectedRoute>
@@ -40,31 +38,35 @@ function App() {
           </ProtectedRoute>
         } />
         
+        {/* 📄 RUTA: Mis Documentos (Sistema completo con tabs) */}
         <Route path="/mis-documentos" element={
           <ProtectedRoute>
-            <MisDocumentos />
+            <Documents />
           </ProtectedRoute>
         } />
         
+        {/* 👨‍🏫 RUTA: Mi Asesor */}
         <Route path="/mi-asesor" element={
           <ProtectedRoute>
             <MiAsesor />
           </ProtectedRoute>
         } />
         
-        
+        {/* 📊 RUTA: Progreso de Tesis */}
         <Route path="/progreso" element={
           <ProtectedRoute>
             <ProgresoTesis />
           </ProtectedRoute>
         } />
         
+        {/* 📚 RUTA: Recursos y Guías */}
         <Route path="/recurso-guia" element={
           <ProtectedRoute>
             <RecursoGuia />
           </ProtectedRoute>
         } />
         
+        {/* 🔔 RUTA: Notificaciones */}
         <Route path="/notificaciones" element={
           <ProtectedRoute>
             <Notificaciones />

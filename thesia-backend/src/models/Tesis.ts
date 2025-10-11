@@ -2,7 +2,7 @@ import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 
 // Definir atributos de la tesis según tu tabla existente
-interface ThesisAttributes {
+interface TesisAttributes {
   id_tesis: number;
   id_usuario_estudiante: number;
   titulo: string;
@@ -22,13 +22,13 @@ interface ThesisAttributes {
 }
 
 // Atributos opcionales para creación
-interface ThesisCreationAttributes extends Optional<ThesisAttributes, 
+interface TesisCreationAttributes extends Optional<TesisAttributes, 
   'id_tesis' | 'descripcion' | 'fecha_registro' | 'fecha_aprobacion' | 
   'fecha_limite' | 'id_asesor' | 'area' | 'calificacion' | 
   'fecha_creacion' | 'fecha_modificacion'> {}
 
-// ✅ CLASE SIN PUBLIC FIELDS (para evitar el warning)
-class Thesis extends Model<ThesisAttributes, ThesisCreationAttributes> implements ThesisAttributes {
+// Clase del modelo
+class Tesis extends Model<TesisAttributes, TesisCreationAttributes> implements TesisAttributes {
   declare id_tesis: number;
   declare id_usuario_estudiante: number;
   declare titulo: string;
@@ -52,7 +52,7 @@ class Thesis extends Model<ThesisAttributes, ThesisCreationAttributes> implement
 }
 
 // Definir el modelo según tu estructura existente
-Thesis.init(
+Tesis.init(
   {
     id_tesis: {
       type: DataTypes.INTEGER,
@@ -88,7 +88,7 @@ Thesis.init(
       allowNull: true,
     },
     fecha_limite: {
-      type: DataTypes.DATEONLY, // Solo fecha, sin hora
+      type: DataTypes.DATEONLY,
       allowNull: true,
     },
     id_asesor: {
@@ -130,9 +130,9 @@ Thesis.init(
   },
   {
     sequelize,
-    modelName: 'Thesis',
-    tableName: 'tesispretesis', // Tu tabla existente
-    timestamps: false, // Usamos nuestros propios campos de fecha
+    modelName: 'Tesis',
+    tableName: 'tesispretesis',
+    timestamps: false,
     indexes: [
       {
         fields: ['id_usuario_estudiante'],
@@ -150,4 +150,4 @@ Thesis.init(
   }
 );
 
-export default Thesis;
+export default Tesis;
