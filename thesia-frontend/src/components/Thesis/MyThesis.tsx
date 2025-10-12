@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import notificationsService from '../../services/notificationsService'; // ← AGREGADO
 import Sidebar from '../Layout/Sidebar';
 import authService from '../../services/authService';
 import thesisService from '../../services/thesisService';
@@ -440,6 +441,27 @@ const MyThesis: React.FC = () => {
           success: result.success,
           message: result.message
         });
+        
+        // 🔔 CREAR NOTIFICACIÓN AL ASESOR SOBRE ACTUALIZACIÓN
+        if (result.success) {
+          try {
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            const studentName = `${userData.nombre || ''} ${userData.apellido || ''}`.trim() || 'Un estudiante';
+            
+            await notificationsService.createNotification({
+              id_usuario: userData.id_asesor || thesisData.id_asesor || 1,
+              mensaje: `${studentName} actualizó su información de tesis: ${formData.titulo}`,
+              tipo: 'estado',
+              prioridad: 'baja',
+              id_referencia: thesisData.id || undefined,
+              tipo_referencia: 'tesis'
+            });
+            console.log('🔔 Notificación de actualización creada para asesor');
+          } catch (notifError) {
+            console.error('❌ Error creando notificación (no crítico):', notifError);
+          }
+        }
+        
       } else {
         // 🔧 MODO CREACIÓN: NUEVA TESIS
         if (!selectedAdvisor) {
@@ -454,6 +476,26 @@ const MyThesis: React.FC = () => {
           ciclo: formData.ciclo,
           id_asesor: selectedAdvisor
         });
+        
+        // 🔔 CREAR NOTIFICACIÓN AL ASESOR SOBRE NUEVO ESTUDIANTE
+        if (result.success) {
+          try {
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            const studentName = `${userData.nombre || ''} ${userData.apellido || ''}`.trim() || 'Un estudiante';
+            
+            await notificationsService.createNotification({
+              id_usuario: selectedAdvisor,
+              mensaje: `${studentName} se registró como tu estudiante con la tesis: ${formData.titulo}`,
+              tipo: 'estado',
+              prioridad: 'media',
+              id_referencia: result.thesis?.id || undefined,
+              tipo_referencia: 'tesis'
+            });
+            console.log('🔔 Notificación de nuevo estudiante creada para asesor');
+          } catch (notifError) {
+            console.error('❌ Error creando notificación (no crítico):', notifError);
+          }
+        }
       }
 
       console.log('📋 === RESULTADO FINAL ===');

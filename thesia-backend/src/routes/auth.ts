@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
@@ -277,6 +278,73 @@ router.post('/update-profile', async (req, res) => {
       success: false,
       message: 'Error interno del servidor',
       error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+    });
+  }
+});
+
+// 👤 NUEVO ENDPOINT: Obtener usuario actual
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    console.log('👤 Obteniendo usuario actual - ID:', (req as any).user?.id);
+    
+    const userId = (req as any).user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token inválido - Usuario no identificado'
+      });
+    }
+
+    // 🔍 Buscar usuario en la base de datos usando el modelo User
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      console.log('❌ Usuario no encontrado en BD:', userId);
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    console.log('✅ Usuario encontrado:', {
+      id: user.id_usuario,
+      email: user.correo_institucional,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      rol: user.rol,
+      estado: user.estado
+    });
+
+    // 🔒 Verificar que el usuario esté activo
+    if (user.estado !== 'activo') {
+      return res.status(403).json({
+        success: false,
+        message: 'Usuario inactivo'
+      });
+    }
+
+    // 📦 Respuesta formateada usando el método toJWT() existente
+    const userData = user.toJWT();
+
+    console.log('📤 Datos enviados al frontend:', userData);
+
+    res.json({
+      success: true,
+      user: userData,
+      message: 'Usuario obtenido exitosamente',
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error: unknown) {
+    console.error('❌ Error obteniendo usuario actual:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: process.env.NODE_ENV === 'development' ? errorMessage : 'Error interno'
     });
   }
 });

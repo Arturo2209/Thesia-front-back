@@ -57,7 +57,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
     return {
       id: this.id_usuario,
       email: this.correo_institucional,
-      name: this.nombre,  // Solo nombre, no concatenar
+      name: `${this.nombre} ${this.apellido}`.trim(),  // Solo nombre, no concatenar
       picture: this.avatar_url,
       role: this.rol,
       isVerified: this.estado === 'activo',

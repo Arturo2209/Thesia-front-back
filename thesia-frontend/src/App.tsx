@@ -5,8 +5,7 @@ import CompleteProfile from './components/Profile/CompleteProfile';
 import Dashboard from './components/Dashboard/Dashboard';
 import MyThesis from './components/Thesis/MyThesis';
 import Documents from './components/Documents/Documents'; // ✅ CAMBIO: Import correcto
-import MiAsesor from './components/Advisor/MiAsesor';
-import ProgresoTesis from './components/Progress/ProgresoTesis';
+import MiAsesor from './components/Advisor/components/MiAsesor';
 import RecursoGuia from './components/Progress/RecursoGuia';
 import Notificaciones from './components/Notifications/Notificaciones';
 
@@ -49,13 +48,6 @@ function App() {
         <Route path="/mi-asesor" element={
           <ProtectedRoute>
             <MiAsesor />
-          </ProtectedRoute>
-        } />
-        
-        {/* 📊 RUTA: Progreso de Tesis */}
-        <Route path="/progreso" element={
-          <ProtectedRoute>
-            <ProgresoTesis />
           </ProtectedRoute>
         } />
         

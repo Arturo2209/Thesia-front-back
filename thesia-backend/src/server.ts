@@ -7,6 +7,7 @@ import sequelize, { testConnection, verifyDatabase } from './config/database';
 
 // Importar modelos para registro
 import User from './models/User';
+import scheduleRoutes from './routes/schedules';
 
 // Importar rutas CORREGIDAS
 import authRoutes from './routes/auth';
@@ -17,6 +18,8 @@ import authRoutes from './routes/auth';
 import advisorsRouter from './routes/advisors';
 import tesisRouter from './routes/tesis';
 import documentosRouter from './routes/documentos'; // ✅ NUEVA IMPORTACIÓN
+import guiasRouter from './routes/guias';
+import notificationsRouter from './routes/notifications';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -46,10 +49,12 @@ console.log('📍 Registrando rutas CORREGIDAS CON DOCUMENTOS...');
 
 // RUTAS ESPECÍFICAS PRIMERO (MAYOR PRIORIDAD)
 app.use('/api/advisors', advisorsRouter);
+app.use('/api/schedules', scheduleRoutes);
 app.use('/api/thesis', tesisRouter);   // ← RUTAS CORREGIDAS CON JOIN
 app.use('/api/documents', documentosRouter); // ✅ NUEVA RUTA DE DOCUMENTOS
+app.use('/api/guides', guiasRouter);
 app.use('/api/auth', authRoutes);
-
+app.use('/api/notifications', notificationsRouter);
 // 🚨 COMENTAR LAS RUTAS VIEJAS:
 // app.use('/api', apiRoutes);
 

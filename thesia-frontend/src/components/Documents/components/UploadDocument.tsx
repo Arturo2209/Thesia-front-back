@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import documentsService from '../../../services/documentsService';
+import notificationsService from '../../../services/notificationsService';
+import thesisService from '../../../services/thesisService';
 import type { ThesisPhase, UploadDocumentRequest } from '../types/documents.types';
 import { uploadDocumentStyles } from '../styles/UploadDocument.styles';
 
@@ -33,7 +35,8 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
+  const [showGuides, setShowGuides] = useState(false);
+  
   // Validaciones
   const [errors, setErrors] = useState<{
     phase?: string;
@@ -100,9 +103,41 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
     return reasons[phase] || 'Fase no disponible aún';
   };
 
-  // ✅ CORRECCIÓN 1: Función simplificada para obtener solo nombre y extensión
+  // Función simplificada para obtener solo nombre y extensión
   const getSimpleFileName = (fileName: string): string => {
-    return fileName; // Solo retorna el nombre completo del archivo
+    return fileName;
+  };
+
+  // ✅ FUNCIÓN: Obtener ID real del asesor
+  const getAdvisorId = async (): Promise<number | null> => {
+    try {
+      console.log('🔍 === OBTENIENDO ID DEL ASESOR ===');
+      
+      // 1. Intentar obtener desde mi tesis
+      const myThesisResponse = await thesisService.getMyThesis();
+      
+      if (myThesisResponse.success && myThesisResponse.thesis?.id_asesor) {
+        console.log('✅ Asesor encontrado desde tesis:', {
+          id_asesor: myThesisResponse.thesis.id_asesor,
+          asesor_nombre: myThesisResponse.thesis.asesor_nombre
+        });
+        return myThesisResponse.thesis.id_asesor;
+      }
+
+      // 2. Como fallback, intentar desde userData (aunque puede no ser confiable)
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      if (userData.id_asesor && userData.id_asesor > 0) {
+        console.log('⚠️ Usando asesor desde userData (fallback):', userData.id_asesor);
+        return userData.id_asesor;
+      }
+
+      console.log('❌ No se pudo determinar el asesor asignado');
+      return null;
+
+    } catch (error) {
+      console.error('❌ Error obteniendo ID del asesor:', error);
+      return null;
+    }
   };
 
   // Validar archivo
@@ -216,7 +251,7 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Manejar envío del formulario
+  // ✅ FUNCIÓN CORREGIDA: Manejar envío del formulario
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -248,6 +283,55 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
       if (response.success) {
         console.log('✅ Documento subido exitosamente');
         setSuccess('¡Documento subido exitosamente! Será revisado por tu asesor.');
+        
+        // 🔔 CREAR NOTIFICACIONES - VERSIÓN CORREGIDA SIN DUPLICAR VARIABLES
+        try {
+          console.log('🔔 === CREANDO NOTIFICACIONES ===');
+          
+          const advisorId = await getAdvisorId();
+          
+          if (advisorId) {
+            // ✅ OBTENER DATOS DEL USUARIO UNA SOLA VEZ
+            const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+            const studentName = `${currentUser.nombre || ''} ${currentUser.apellidos || currentUser.apellido || ''}`.trim() || 'Un estudiante';
+            
+            console.log('📋 Datos para notificaciones:', {
+              advisorId,
+              studentId: currentUser.id,
+              studentName,
+              fase: getPhaseText(formData.phase),
+              fileName: formData.file?.name
+            });
+
+            // 🔔 NOTIFICACIÓN PARA EL ASESOR
+            await notificationsService.createNotification({
+              id_usuario: advisorId,
+              mensaje: `${studentName} subió un nuevo documento en ${getPhaseText(formData.phase)}: ${formData.file?.name}`,
+              tipo: 'documento',
+              prioridad: 'media',
+              id_referencia: response.document?.id || undefined,
+              tipo_referencia: 'documento'
+            });
+
+            // 🔔 NOTIFICACIÓN PARA EL ESTUDIANTE (CONFIRMACIÓN)
+            await notificationsService.createNotification({
+              id_usuario: currentUser.id,
+              mensaje: `✅ Documento "${formData.file?.name}" subido exitosamente en ${getPhaseText(formData.phase)}. Tu asesor será notificado.`,
+              tipo: 'documento',
+              prioridad: 'baja',
+              id_referencia: response.document?.id || undefined,
+              tipo_referencia: 'documento'
+            });
+            
+            console.log('✅ Notificaciones creadas para asesor ID:', advisorId, 'y estudiante ID:', currentUser.id);
+          } else {
+            console.log('⚠️ No se pudo determinar el asesor - notificaciones omitidas');
+          }
+          
+        } catch (notifError) {
+          console.error('❌ Error creando notificaciones (no crítico):', notifError);
+          // No mostrar error al usuario, es secundario
+        }
         
         // Limpiar formulario
         setFormData({
@@ -303,11 +387,23 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
           <h2>📤 Subir Documento</h2>
           <p>Sube tu documento para que sea revisado por tu asesor</p>
         </div>
-        <div className="upload-tips">
-          <div className="tip-icon">💡</div>
-          <div className="tip-content">
-            <div className="tip-title">Consejos:</div>
-            <div className="tip-text">PDF, DOC, DOCX • Máx. 10MB</div>
+        <div className="header-actions">
+          {/* 📚 BOTÓN DE GUÍAS */}
+          <button 
+            className="guides-button"
+            onClick={() => setShowGuides(true)}
+            type="button"
+          >
+            <span className="button-icon">📚</span>
+            Ver Guías
+          </button>
+          
+          <div className="upload-tips">
+            <div className="tip-icon">💡</div>
+            <div className="tip-content">
+              <div className="tip-title">Consejos:</div>
+              <div className="tip-text">PDF, DOC, DOCX • Máx. 10MB</div>
+            </div>
           </div>
         </div>
       </div>
@@ -455,7 +551,7 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
               />
               
               {formData.file ? (
-                /* ✅ CORRECCIÓN 1: ARCHIVO SELECCIONADO - Solo nombre y extensión */
+                /* ARCHIVO SELECCIONADO */
                 <div className="file-selected">
                   <div className="file-icon">📄</div>
                   <div className="file-info">
@@ -582,6 +678,52 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
           </div>
         </form>
       </div>
+
+      {/* MODAL DE GUÍAS */}
+      {showGuides && (
+        <div className="guides-modal-overlay" onClick={() => setShowGuides(false)}>
+          <div className="guides-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="guides-modal-header">
+              <h3>📚 Guías y Recursos</h3>
+              <button 
+                className="close-button"
+                onClick={() => setShowGuides(false)}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="guides-modal-content">
+              <div className="guides-list">
+                {/* EJEMPLO DE GUÍA */}
+                <div className="guide-item">
+                  <div className="guide-icon">📄</div>
+                  <div className="guide-info">
+                    <h4>Plan_De_Proyecto_Modelo.docx</h4>
+                    <p>Plantilla oficial para estructurar tu documento de tesis</p>
+                    <div className="guide-meta">
+                      <span>📅 Subido hace 2 días</span>
+                      <span>👨‍🏫 Por tu asesor</span>
+                    </div>
+                  </div>
+                  <button className="download-guide-btn">
+                    ⬇️ Descargar
+                  </button>
+                </div>
+                
+                {/* MENSAJE SI NO HAY GUÍAS */}
+                <div className="no-guides">
+                  <div className="no-guides-icon">📚</div>
+                  <div className="no-guides-text">
+                    <h4>No hay guías disponibles</h4>
+                    <p>Tu asesor aún no ha subido guías para tu tesis. Las guías aparecerán aquí cuando estén disponibles.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{uploadDocumentStyles}</style>
     </div>

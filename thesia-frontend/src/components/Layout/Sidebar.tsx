@@ -46,7 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
     // 🔧 CORREGIDO: Ahora puede acceder a codigo_estudiante
     const profileIncomplete = !user?.carrera || !user?.codigo_estudiante;
     
-    const restrictedRoutes = ['/progreso', '/mis-documentos', '/mi-asesor', '/notificaciones'];
+    const restrictedRoutes = ['/mis-documentos', '/mi-asesor', '/notificaciones'];
     
     if (profileIncomplete && restrictedRoutes.includes(path)) {
       console.log('🚫 Perfil incompleto - Redirigiendo a completar perfil');
@@ -61,7 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
   const getNavItemClass = (path: string) => {
     const user = authService.getStoredUser();
     const profileIncomplete = !user?.carrera || !user?.codigo_estudiante;
-    const restrictedRoutes = ['/progreso', '/mis-documentos', '/mi-asesor', '/notificaciones'];
+    const restrictedRoutes = ['/mis-documentos', '/mi-asesor', '/notificaciones'];
     
     const isRestricted = profileIncomplete && restrictedRoutes.includes(path);
     const isCurrentPath = location.pathname === path;
@@ -95,12 +95,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
         <div className={getActiveClass('/dashboard')} onClick={() => handleNavigation('/dashboard')}>
           <span className="nav-icon">🏠</span>
           <span className="nav-text">Inicio</span>
-        </div>
-        
-        {/* 🔧 CORREGIDO: Usar getNavItemClass para mostrar restricciones */}
-        <div className={getNavItemClass('/progreso')} onClick={() => handleNavigation('/progreso')}>
-          <span className="nav-icon">📈</span>
-          <span className="nav-text">Progreso</span>
         </div>
         
         <div className={getActiveClass('/mi-tesis')} onClick={() => handleNavigation('/mi-tesis')}>

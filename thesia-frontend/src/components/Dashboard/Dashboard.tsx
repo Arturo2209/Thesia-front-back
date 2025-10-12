@@ -1,219 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../Layout/Sidebar';
 import authService from '../../services/authService';
-import dashboardService from '../../services/dashboardService';
-import thesisService from '../../services/thesisService';
-import apiService from '../../services/api';
+import { useDashboardData } from './hooks/useDashboardData';  // ✅ IMPORTAR EL HOOK
 import { dashboardStyles } from './Dashboard.styles';
-
-// Tipos para el dashboard
-interface DashboardData {
-  user: {
-    name: string;
-    role: string;
-    roleDisplay: string;
-    carrera: string;
-    profileCompleted: boolean;
-    email: string;
-  };
-  thesis: {
-    hasThesis: boolean;
-    title?: string;
-    phase: number;
-    progress: number;
-    daysRemaining: number;
-  };
-  documents: {
-    totalUploaded: number;
-    approved: number;
-    pending: number;
-    rejected: number;
-  };
-  advisor: {
-    hasAdvisor: boolean;
-    name?: string;
-    email?: string;
-  };
-  activities: Array<{
-    id: number;
-    description: string;
-    date: string;
-    type: 'document' | 'meeting' | 'comment' | 'profile' | 'login';
-  }>;
-}
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadDashboardData();
-  }, [navigate]);
-
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // 🔗 1. TEST DE CONEXIÓN
-      console.log('🔗 === PROBANDO CONEXIÓN AL BACKEND ===');
-      await apiService.testConnection();
-      setConnectionStatus('connected');
-      
-      // 👤 2. VERIFICAR USUARIO
-      const storedUser = authService.getStoredUser();
-      if (!storedUser) {
-        console.log('❌ No hay usuario autenticado');
-        navigate('/');
-        return;
-      }
-      
-      // 📚 3. VERIFICAR TESIS CON thesisService (MÁS CONFIABLE)
-      console.log('📚 === VERIFICANDO TESIS EXISTENTE ===');
-      let hasThesis = false;
-      let thesisTitle = '';
-      
-      try {
-        const thesisResponse = await thesisService.getMyThesis();
-        console.log('📖 Respuesta de tesis:', {
-          success: thesisResponse.success,
-          hasThesis: thesisResponse.hasThesis,
-          title: thesisResponse.thesis?.titulo
-        });
-        
-        if (thesisResponse.success && thesisResponse.hasThesis && thesisResponse.thesis) {
-          hasThesis = true;
-          thesisTitle = thesisResponse.thesis.titulo;
-          console.log('✅ Usuario TIENE tesis registrada:', thesisTitle);
-        } else {
-          console.log('ℹ️ Usuario NO tiene tesis registrada');
-        }
-      } catch (thesisError) {
-        console.log('⚠️ Error verificando tesis (usando fallback):', thesisError);
-      }
-      
-      // 📊 4. OBTENER DATOS DEL DASHBOARD
-      let dashboardInfo;
-      try {
-        const dashboardResponse = await dashboardService.getDashboardData();
-        
-        // 🔧 FIX: La respuesta puede estar en .data O directamente en la respuesta
-        dashboardInfo = dashboardResponse?.data || dashboardResponse;
-        
-        console.log('📊 Datos del dashboard cargados:', dashboardInfo);
-        console.log('📊 Estructura completa dashboardResponse:', dashboardResponse);
-        
-        // 🔧 Si dashboardInfo sigue siendo undefined, crear estructura por defecto
-        if (!dashboardInfo || typeof dashboardInfo !== 'object') {
-          console.log('⚠️ Dashboard info es undefined o inválido, creando estructura por defecto');
-          dashboardInfo = createDefaultDashboardData(storedUser);
-        }
-        
-      } catch (dashboardError) {
-        console.log('⚠️ Error obteniendo dashboard, usando datos por defecto:', dashboardError);
-        dashboardInfo = createDefaultDashboardData(storedUser);
-      }
-      
-      // 🔄 5. ASEGURAR QUE dashboardInfo TENGA LA ESTRUCTURA CORRECTA
-      if (!dashboardInfo.user) {
-        dashboardInfo.user = {
-          name: storedUser.name || 'Usuario',
-          role: storedUser.role || 'student',
-          roleDisplay: 'Estudiante',
-          carrera: storedUser.carrera || 'Sin carrera',
-          profileCompleted: true,
-          email: storedUser.email || ''
-        };
-      }
-      
-      if (!dashboardInfo.thesis) {
-        dashboardInfo.thesis = {
-          hasThesis: false,
-          title: '',
-          phase: 0,
-          progress: 0,
-          daysRemaining: 0
-        };
-      }
-      
-      if (!dashboardInfo.documents) {
-        dashboardInfo.documents = {
-          totalUploaded: 0,
-          approved: 0,
-          pending: 0,
-          rejected: 0
-        };
-      }
-      
-      if (!dashboardInfo.advisor) {
-        dashboardInfo.advisor = {
-          hasAdvisor: false
-        };
-      }
-      
-      if (!dashboardInfo.activities) {
-        dashboardInfo.activities = [];
-      }
-      
-      // 🔄 6. COMBINAR DATOS CON LA VERIFICACIÓN REAL DE TESIS
-      const finalDashboardData: DashboardData = {
-        ...dashboardInfo,
-        thesis: {
-          ...dashboardInfo.thesis,
-          hasThesis: hasThesis,           // ✅ VALOR REAL DE thesisService
-          title: thesisTitle || dashboardInfo.thesis.title
-        }
-      };
-      
-      console.log('📋 === ESTADO FINAL DEL DASHBOARD ===');
-      console.log('Usuario:', finalDashboardData.user.name);
-      console.log('Tiene Tesis:', finalDashboardData.thesis.hasThesis);
-      console.log('Título Tesis:', finalDashboardData.thesis.title || 'N/A');
-      console.log('Estructura completa:', finalDashboardData);
-      console.log('========================================');
-      
-      setDashboardData(finalDashboardData);
-      
-    } catch (error) {
-      console.error('❌ Error general cargando dashboard:', error);
-      setConnectionStatus('error');
-      setError('Error cargando datos del dashboard. Inténtalo de nuevo.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createDefaultDashboardData = (user: any): DashboardData => ({
-    user: {
-      name: user.name || 'Usuario',
-      role: user.role || 'student',
-      roleDisplay: 'Estudiante',
-      carrera: user.carrera || 'Sin carrera',
-      profileCompleted: true,
-      email: user.email || ''
-    },
-    thesis: {
-      hasThesis: false,
-      title: '',
-      phase: 0,
-      progress: 0,
-      daysRemaining: 0
-    },
-    documents: {
-      totalUploaded: 0,
-      approved: 0,
-      pending: 0,
-      rejected: 0
-    },
-    advisor: {
-      hasAdvisor: false
-    },
-    activities: []
-  });
+  
+  // ✅ USAR EL HOOK EN LUGAR DE useState MANUAL
+  const { 
+    loading, 
+    error, 
+    data: dashboardData, 
+    connectionStatus,
+    refresh,
+    retry 
+  } = useDashboardData();
 
   const handleLogout = async () => {
     try {
@@ -253,8 +56,8 @@ const Dashboard: React.FC = () => {
         <div className="main-content">
           <div className="error-container">
             <div className="error-icon">❌</div>
-            <div className="error-message">{error}</div>
-            <button className="retry-button" onClick={loadDashboardData}>
+            <div className="error-message">{error.message}</div>
+            <button className="retry-button" onClick={retry}>
               🔄 Reintentar
             </button>
           </div>
@@ -328,15 +131,15 @@ const Dashboard: React.FC = () => {
                     <>
                       <div className="thesis-info">
                         <h4>"{dashboardData.thesis.title}"</h4>
-                        <p>Fase {dashboardData.thesis.phase || 1} de 5</p>
+                        <p>Fase {dashboardData.thesis.currentPhase?.current || 1} de 5</p>
                       </div>
                       <div className="progress-bar">
                         <div 
                           className="progress-fill"
-                          style={{ width: `${dashboardData.thesis.progress || 25}%` }}
+                          style={{ width: `${dashboardData.thesis.overallProgress || 0}%` }}
                         />
                       </div>
-                      <p className="progress-text">{dashboardData.thesis.progress || 25}%</p>
+                      <p className="progress-text">{dashboardData.thesis.overallProgress || 0}%</p>
                     </>
                   ) : (
                     <div className="no-thesis">
@@ -352,7 +155,7 @@ const Dashboard: React.FC = () => {
               <div className="stats-grid">
                 <div className="stat-card blue">
                   <div className="stat-icon">📊</div>
-                  <div className="stat-number">{dashboardData?.thesis.progress || 25}%</div>
+                  <div className="stat-number">{dashboardData?.thesis?.overallProgress || 0}%</div>
                   <div className="stat-label">Progreso Total</div>
                 </div>
                 <div className="stat-card green">
@@ -367,7 +170,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 <div className="stat-card purple">
                   <div className="stat-icon">📅</div>
-                  <div className="stat-number">{dashboardData?.thesis.daysRemaining || 105}</div>
+                  <div className="stat-number">{dashboardData?.thesis.daysRemaining || 0}</div>
                   <div className="stat-label">Días Restantes</div>
                 </div>
               </div>
@@ -422,51 +225,53 @@ const Dashboard: React.FC = () => {
                 </div>
                 <div className="card-content">
                   <div className="quick-actions">
-                    <button 
-                      className="action-button"
-                      onClick={() => navigate('/mi-tesis')}
-                    >
-                      <span className="action-icon">📝</span>
-                      <div className="action-content">
-                        <span className="action-title">Mi Tesis</span>
-                        <span className="action-subtitle">Ver y editar información</span>
-                      </div>
-                    </button>
-                    <button 
-                      className="action-button"
-                      onClick={() => navigate('/mis-documentos')}
-                    >
-                      <span className="action-icon">📄</span>
-                      <div className="action-content">
-                        <span className="action-title">Documentos</span>
-                        <span className="action-subtitle">Subir y gestionar</span>
-                      </div>
-                    </button>
-                    <button 
-                      className="action-button"
-                      onClick={() => navigate('/mi-asesor')}
-                    >
-                      <span className="action-icon">👨‍🏫</span>
-                      <div className="action-content">
-                        <span className="action-title">Mi Asesor</span>
-                        <span className="action-subtitle">Contactar y reuniones</span>
-                      </div>
-                    </button>
-                    <button 
-                      className="action-button"
-                      onClick={() => navigate('/progreso')}
-                    >
-                      <span className="action-icon">📊</span>
-                      <div className="action-content">
-                        <span className="action-title">Progreso</span>
-                        <span className="action-subtitle">Ver avance detallado</span>
-                      </div>
-                    </button>
+                    {dashboardData?.quickActions?.map((action) => (
+                      <button 
+                        key={action.id}
+                        className="action-button"
+                        onClick={() => navigate(action.url)}
+                        disabled={!action.isEnabled}
+                      >
+                        <span className="action-icon">{action.icon}</span>
+                        <div className="action-content">
+                          <span className="action-title">{action.title}</span>
+                          <span className="action-subtitle">{action.subtitle}</span>
+                        </div>
+                        {action.badge && (
+                          <span className="action-badge">{action.badge}</span>
+                        )}
+                      </button>
+                    )) || (
+                      // Fallback si no hay quick actions
+                      <>
+                        <button className="action-button" onClick={() => navigate('/mi-tesis')}>
+                          <span className="action-icon">📝</span>
+                          <div className="action-content">
+                            <span className="action-title">Mi Tesis</span>
+                            <span className="action-subtitle">Ver y editar información</span>
+                          </div>
+                        </button>
+                        <button className="action-button" onClick={() => navigate('/mis-documentos')}>
+                          <span className="action-icon">📄</span>
+                          <div className="action-content">
+                            <span className="action-title">Documentos</span>
+                            <span className="action-subtitle">Subir y gestionar</span>
+                          </div>
+                        </button>
+                        <button className="action-button" onClick={() => navigate('/mi-asesor')}>
+                          <span className="action-icon">👨‍🏫</span>
+                          <div className="action-content">
+                            <span className="action-title">Mi Asesor</span>
+                            <span className="action-subtitle">Contactar y reuniones</span>
+                          </div>
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* ADVISOR CARD */}
+              {/* ADVISOR CARD - ✅ MEJORADO CON DATOS DEL HOOK */}
               <div className="dashboard-card">
                 <div className="card-header">
                   <h3>Mi Asesor</h3>
@@ -480,9 +285,19 @@ const Dashboard: React.FC = () => {
                       </div>
                       <div className="advisor-details">
                         <h4>{dashboardData.advisor.name}</h4>
-                        <p>{dashboardData.advisor.email}</p>
-                        <button className="contact-button">
-                          📧 Enviar mensaje
+                        <p className="advisor-specialty">{dashboardData.advisor.especialidad}</p>
+                        <p className="advisor-email">{dashboardData.advisor.email}</p>
+                        <div className="advisor-stats">
+                          <span>👥 {dashboardData.advisor.totalStudents} estudiantes</span>
+                          <span className={`advisor-status ${dashboardData.advisor.isOnline ? 'online' : 'offline'}`}>
+                            {dashboardData.advisor.isOnline ? '🟢 En línea' : '🔴 Desconectado'}
+                          </span>
+                        </div>
+                        <button 
+                          className="contact-button"
+                          onClick={() => navigate('/mi-asesor')}
+                        >
+                          💬 Contactar
                         </button>
                       </div>
                     </div>
@@ -495,6 +310,35 @@ const Dashboard: React.FC = () => {
                   )}
                 </div>
               </div>
+
+              {/* PENDING TASKS - ✅ NUEVO CON DATOS DEL HOOK */}
+              {dashboardData?.pendingTasks && dashboardData.pendingTasks.length > 0 && (
+                <div className="dashboard-card">
+                  <div className="card-header">
+                    <h3>Tareas Pendientes</h3>
+                    <span className="card-icon">✅</span>
+                  </div>
+                  <div className="card-content">
+                    <div className="pending-tasks">
+                      {dashboardData.pendingTasks.slice(0, 3).map((task) => (
+                        <div key={task.id} className={`task-item priority-${task.priority}`}>
+                          <div className="task-info">
+                            <h5>{task.title}</h5>
+                            <p>{task.description}</p>
+                            <span className="task-time">{task.estimatedTime}</span>
+                          </div>
+                          <button 
+                            className="task-action"
+                            onClick={() => navigate(task.actionUrl)}
+                          >
+                            ▶️
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

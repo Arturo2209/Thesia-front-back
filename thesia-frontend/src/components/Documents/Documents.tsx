@@ -83,7 +83,7 @@ const Documents: React.FC = () => {
       <div className="main-content">
         {/* HEADER */}
         <header className="main-header">
-          <h1>📄 Documentos de Tesis</h1>
+          <h1>Sistema de Tesis y Pretesis</h1>
           <div className="notification-icon">🔔</div>
         </header>
 

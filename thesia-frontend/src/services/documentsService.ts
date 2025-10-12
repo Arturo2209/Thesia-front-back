@@ -247,6 +247,229 @@ class DocumentsService {
       throw error;
     }
   }
+
+  // 📚 ========== NUEVAS FUNCIONES PARA GUÍAS ========== //
+
+  // 📚 Obtener guías disponibles para el estudiante
+  async getMyGuides(): Promise<{
+    success: boolean;
+    message: string;
+    guides: Array<{
+      id: number;
+      fileName: string;
+      title: string;
+      description: string;
+      phase: string;
+      uploadDate: string;
+      uploadedBy: string;
+    }>;
+  }> {
+    try {
+      console.log('📚 === OBTENIENDO MIS GUÍAS ===');
+      
+      const response = await apiService.get('/guides/my');
+      
+      console.log('✅ Guías obtenidas:', response);
+      return response as {
+        success: boolean;
+        message: string;
+        guides: Array<{
+          id: number;
+          fileName: string;
+          title: string;
+          description: string;
+          phase: string;
+          uploadDate: string;
+          uploadedBy: string;
+        }>;
+      };
+      
+    } catch (error) {
+      console.error('❌ Error obteniendo guías:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Error obteniendo guías',
+        guides: []
+      };
+    }
+  }
+
+  // 📥 Descargar guía
+  async downloadGuide(guideId: number): Promise<Blob> {
+    try {
+      console.log('📥 === DESCARGANDO GUÍA ===', guideId);
+      
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${this.getApiBaseUrl()}/guides/${guideId}/download`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Error response:', errorText);
+        throw new Error('Error descargando guía');
+      }
+
+      const blob = await response.blob();
+      console.log('✅ Guía descargada');
+      return blob;
+      
+    } catch (error) {
+      console.error('❌ Error descargando guía:', error);
+      throw error;
+    }
+  }
+
+  // 📤 Subir nueva guía (solo para asesores)
+  async uploadGuide(uploadData: {
+    file: File;
+    description?: string;
+    phase?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    guide?: {
+      id: number;
+      fileName: string;
+      description?: string;
+      phase?: string;
+      uploadDate: string;
+    };
+  }> {
+    try {
+      console.log('📤 === ASESOR SUBIENDO GUÍA ===');
+      console.log('Archivo:', uploadData.file.name);
+      console.log('Fase:', uploadData.phase);
+      
+      const formData = new FormData();
+      formData.append('file', uploadData.file);
+      
+      if (uploadData.description) {
+        formData.append('description', uploadData.description);
+      }
+      
+      if (uploadData.phase) {
+        formData.append('phase', uploadData.phase);
+      }
+      
+      const response = await apiService.post('/guides/upload', formData);
+      
+      console.log('✅ Guía subida exitosamente:', response);
+      return response as {
+        success: boolean;
+        message: string;
+        guide?: {
+          id: number;
+          fileName: string;
+          description?: string;
+          phase?: string;
+          uploadDate: string;
+        };
+      };
+      
+    } catch (error) {
+      console.error('❌ Error subiendo guía:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Error subiendo guía'
+      };
+    }
+  }
+
+  // 📋 Obtener todas las guías del asesor (para gestión)
+  async getMyUploadedGuides(): Promise<{
+    success: boolean;
+    message: string;
+    guides: Array<{
+      id: number;
+      fileName: string;
+      description?: string;
+      phase?: string;
+      uploadDate: string;
+      active: boolean;
+    }>;
+  }> {
+    try {
+      console.log('📋 === OBTENIENDO GUÍAS SUBIDAS POR MÍ (ASESOR) ===');
+      
+      const response = await apiService.get('/guides/uploaded');
+      
+      console.log('✅ Guías subidas obtenidas:', response);
+      return response as {
+        success: boolean;
+        message: string;
+        guides: Array<{
+          id: number;
+          fileName: string;
+          description?: string;
+          phase?: string;
+          uploadDate: string;
+          active: boolean;
+        }>;
+      };
+      
+    } catch (error) {
+      console.error('❌ Error obteniendo guías subidas:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Error obteniendo guías subidas',
+        guides: []
+      };
+    }
+  }
+
+  // 🗑️ Eliminar guía (solo asesores)
+  async deleteGuide(guideId: number): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    try {
+      console.log('🗑️ === ELIMINANDO GUÍA ===', guideId);
+      
+      const response = await apiService.delete(`/guides/${guideId}`);
+      
+      console.log('✅ Guía eliminada:', response);
+      return response as {
+        success: boolean;
+        message: string;
+      };
+      
+    } catch (error) {
+      console.error('❌ Error eliminando guía:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Error eliminando guía'
+      };
+    }
+  }
+
+  // 🔄 Activar/desactivar guía (solo asesores)
+  async toggleGuideStatus(guideId: number, active: boolean): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    try {
+      console.log('🔄 === CAMBIANDO ESTADO DE GUÍA ===', guideId, active);
+      
+      const response = await apiService.put(`/guides/${guideId}/toggle`, { active });
+      
+      console.log('✅ Estado de guía cambiado:', response);
+      return response as {
+        success: boolean;
+        message: string;
+      };
+      
+    } catch (error) {
+      console.error('❌ Error cambiando estado de guía:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Error cambiando estado de guía'
+      };
+    }
+  }
 }
 
 const documentsService = new DocumentsService();
