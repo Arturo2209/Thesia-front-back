@@ -181,13 +181,15 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
         }
 
         .sidebar-logo {
-          width: 120px;
+          width: calc(100% - 40px);  /* Se ajusta al sidebar automáticamente */
+          max-width: 800px;          /* Máximo 200px */
           height: auto;
-          max-height: 40px;
+          max-height: 90px;
           object-fit: contain;
           border-radius: 4px;
           transition: transform 0.2s ease;
-          filter: brightness(1.1) contrast(1.1);
+          filter: brightness(1.8) contrast(1.5) saturate(1.2);
+          padding: 8px;
         }
 
         .sidebar-logo:hover {

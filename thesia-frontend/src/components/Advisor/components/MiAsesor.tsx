@@ -2,10 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../Layout/Sidebar';
 import Chat from './Chat';
-import AdvisorSchedule from './AdvisorSchedule'; // 🔧 AGREGAR ESTE IMPORT
+import AdvisorSchedule from './AdvisorSchedule';
 import type { TabType, Advisor } from '../types/advisor.types';
 import { miAsesorStyles } from '../styles/MiAsesor.styles';
 import advisorService from '../../../services/advisorService';
+import authService from '../../../services/authService'; // ← AGREGAR ESTA LÍNEA
 
 const MiAsesor: React.FC = () => {
   const navigate = useNavigate();
@@ -50,7 +51,6 @@ const MiAsesor: React.FC = () => {
     
     try {
       console.log('📅 Agendar reunión con:', advisor.name);
-      // 🔧 CAMBIAR A LA PESTAÑA DE HORARIOS
       setActiveTab('horarios');
       
     } catch (error) {
@@ -59,8 +59,14 @@ const MiAsesor: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    navigate('/');
+  // ✅ USAR LA MISMA FUNCIÓN DE LOGOUT QUE DOCUMENTS.TSX
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Error en logout:', error);
+    }
   };
 
   // 🎨 Obtener iniciales del nombre
@@ -98,7 +104,7 @@ const MiAsesor: React.FC = () => {
             </div>
           </div>
         </div>
-        <style>{miAsesorStyles}</style>
+        
       </div>
     );
   }
@@ -157,9 +163,11 @@ const MiAsesor: React.FC = () => {
 
   return (
     <div className="asesor-container">
+      {/* ✅ EXACTAMENTE IGUAL QUE DOCUMENTS.TSX */}
       <Sidebar onLogout={handleLogout} />
-
+      
       <div className="main-content">
+        {/* HEADER */}
         <header className="main-header">
           <h1>Sistema de Tesis y Pretesis</h1>
           <div className="notification-icon">🔔</div>
@@ -227,7 +235,7 @@ const MiAsesor: React.FC = () => {
                 className={`tab ${activeTab === 'horarios' ? 'active' : ''}`}
                 onClick={() => setActiveTab('horarios')}
               >
-                📅 Horarios {/* 🔧 CAMBIAR ÍCONO */}
+                📅 Horarios
               </button>
             </div>
 
@@ -306,12 +314,10 @@ const MiAsesor: React.FC = () => {
 
               {activeTab === 'comunicacion' && (
                 <div className="communication-content">
-                  {/* 💬 COMPONENTE DEL CHAT */}
                   <Chat advisor={advisor} />
                 </div>
               )}
 
-              {/* 🔧 REEMPLAZAR COMPLETAMENTE LA SECCIÓN DE HORARIOS */}
               {activeTab === 'horarios' && (
                 <div className="schedule-content">
                   <AdvisorSchedule advisor={advisor} />

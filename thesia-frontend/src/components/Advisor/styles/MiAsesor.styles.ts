@@ -37,14 +37,15 @@ export const miAsesorStyles = `
   .notification-icon {
     font-size: 20px;
     cursor: pointer;
-    padding: 8px;           // ← AGREGAR
-    border-radius: 50%;     // ← AGREGAR
-    transition: background 0.2s;  // ← AGREGAR
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.2s;
   }
 
   .notification-icon:hover {
     background: #f0f0f0;
   }
+
   .asesor-section {
     padding: 32px;
     max-width: 1200px;
