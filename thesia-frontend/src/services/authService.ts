@@ -63,8 +63,13 @@ export const authService = {
       const data: AuthResponse = await response.json();
       
       if (data.success && data.token) {
+        const isAdvisor = data.user?.role === 'asesor';
+        const userForFrontend = {
+          ...data.user,
+          profileCompleted: isAdvisor ? true : data.user?.profileCompleted,
+        };
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('user', JSON.stringify(userForFrontend));
         console.log('💾 Datos guardados en localStorage (Google)');
         console.log('🎯 Es primer login:', data.isFirstLogin);
       }
@@ -84,35 +89,39 @@ export const authService = {
       
       const response = await apiService.post<LoginResponse>('/auth/login', credentials);
       
-      console.log('📊 Respuesta del servidor:', {
-        success: response.success,
-        token: response.token ? 'Presente' : 'Ausente',
-        user: response.user ? response.user.email : 'Sin usuario'
-      });
-
+      console.log('📊 [authService] Respuesta del servidor:', response);
       if (response.success && response.token && response.user) {
-        // Guardar token y usuario en localStorage
+        // Adaptar el objeto user para frontend
+        const isAdvisor = (response.user.rol || response.user.role) === 'asesor';
+        const userForFrontend = {
+          id: response.user.id_usuario || response.user.id,
+          email: response.user.correo_institucional || response.user.email,
+          name: response.user.nombre && response.user.apellido ? `${response.user.nombre} ${response.user.apellido}` : response.user.nombre || response.user.name,
+          role: response.user.rol || response.user.role,
+          picture: response.user.avatar_url || response.user.picture,
+          especialidad: response.user.especialidad,
+          profileCompleted: isAdvisor ? true : response.user.profileCompleted,
+        };
         localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        
-        console.log('✅ === LOGIN TRADICIONAL EXITOSO ===');
-        console.log('💾 Token guardado:', response.token.substring(0, 20) + '...');
-        console.log('👤 Usuario guardado:', response.user.email);
-        
+        localStorage.setItem('user', JSON.stringify(userForFrontend));
+        console.log('✅ [authService] LOGIN TRADICIONAL EXITOSO');
+        console.log('💾 [authService] Token guardado:', response.token.substring(0, 20) + '...');
+        console.log('👤 [authService] Usuario guardado:', userForFrontend);
         // Verificar que se guardó correctamente
         const savedToken = localStorage.getItem('token');
         const savedUser = localStorage.getItem('user');
-        console.log('🔍 Verificación almacenamiento:', {
+        console.log('🔍 [authService] Verificación almacenamiento:', {
           tokenSaved: savedToken ? 'Sí' : 'No',
-          userSaved: savedUser ? 'Sí' : 'No'
+          userSaved: savedUser ? 'Sí' : 'No',
+          userData: savedUser
         });
       } else {
-        console.log('❌ Login tradicional fallido:', response.message);
+        console.log('❌ [authService] Login tradicional fallido:', response.message);
       }
 
       return response;
     } catch (error: any) {
-      console.error('❌ === ERROR EN LOGIN TRADICIONAL ===');
+      console.error('❌ [authService] ERROR EN LOGIN TRADICIONAL');
       console.error('Error completo:', error);
       
       throw error.response?.data || { 

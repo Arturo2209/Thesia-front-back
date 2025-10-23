@@ -17,7 +17,33 @@ const MiAsesor: React.FC = () => {
 
   // 🔄 Cargar datos del asesor desde API
   useEffect(() => {
-    loadMyAdvisor();
+    const user = authService.getStoredUser();
+    console.log('🔍 [MiAsesor] Usuario en localStorage:', user);
+    if (user && user.role === 'asesor') {
+      // Mostrar perfil propio del asesor
+      setAdvisor({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        specialty: user.especialidad || 'Sin especialidad',
+        telefono: user.telefono || null,
+        avatar_url: user.picture || null,
+        current_students: 0,
+        max_capacity: 5,
+        available_capacity: 5,
+        disponible: true,
+        rating: 4.8,
+        experience_years: 10,
+        completed_theses: 0,
+        about: 'Docente y asesor de tesis en TECSUP.',
+        specializations: [user.especialidad || 'Metodología de Investigación'],
+        available: true
+      });
+      setLoading(false);
+      setError(null);
+    } else {
+      loadMyAdvisor();
+    }
   }, []);
 
   const loadMyAdvisor = async () => {
@@ -25,21 +51,23 @@ const MiAsesor: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      console.log('🔄 Cargando mi asesor desde API...');
-      
+      const user = authService.getStoredUser();
+      console.log('🔍 [MiAsesor] Intentando cargar asesor para usuario:', user?.email, '-', user?.role);
+
       const response = await advisorService.getMyAdvisor();
-      
+      console.log('🔍 [MiAsesor] Respuesta de getMyAdvisor:', response);
+
       if (response.success && response.advisor) {
-        console.log('✅ Asesor cargado exitosamente:', response.advisor.name);
+        console.log('✅ [MiAsesor] Asesor cargado exitosamente:', response.advisor.name);
         setAdvisor(response.advisor);
       } else {
-        console.log('ℹ️ No hay asesor asignado:', response.message);
+        console.log('ℹ️ [MiAsesor] No hay asesor asignado:', response.message);
         setAdvisor(null);
         setError(response.message || 'No tienes un asesor asignado');
       }
 
     } catch (error) {
-      console.error('❌ Error cargando asesor:', error);
+      console.error('❌ [MiAsesor] Error cargando asesor:', error);
       setError('Error cargando la información del asesor');
     } finally {
       setLoading(false);

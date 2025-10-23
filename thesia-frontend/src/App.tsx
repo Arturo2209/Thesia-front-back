@@ -1,3 +1,7 @@
+import AdvisorResourcesPage from './components/Advisor/Resources';
+import AdvisorStudentsPage from './components/Advisor/Students';
+import AdvisorDocumentsPage from './components/Advisor/Documents';
+import AdvisorThesesPage from './components/Advisor/Theses';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './components/Auth/Login';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
@@ -8,6 +12,7 @@ import Documents from './components/Documents/Documents'; // ✅ CAMBIO: Import 
 import MiAsesor from './components/Advisor/components/MiAsesor';
 import RecursoGuia from './components/Progress/RecursoGuia';
 import Notificaciones from './components/Notifications/Notificaciones';
+import AdvisorDashboard from './components/Advisor/Dashboard';
 
 function App() {
   return (
@@ -62,6 +67,37 @@ function App() {
         <Route path="/notificaciones" element={
           <ProtectedRoute>
             <Notificaciones />
+          </ProtectedRoute>
+        } />
+
+        {/* 👨‍🏫 RUTA: Dashboard Asesor */}
+        <Route path="/advisor/dashboard" element={
+          <ProtectedRoute>
+            <AdvisorDashboard />
+          </ProtectedRoute>
+        } />
+        {/* 📖 RUTA: Tesis Asignadas para Asesor */}
+        <Route path="/advisor/theses" element={
+          <ProtectedRoute>
+            <AdvisorThesesPage />
+          </ProtectedRoute>
+        } />
+        {/* 📄 RUTA: Documentos Recibidos para Asesor */}
+        <Route path="/advisor/documents" element={
+          <ProtectedRoute>
+            <AdvisorDocumentsPage />
+          </ProtectedRoute>
+        } />
+        {/* 👨‍🎓 RUTA: Estudiantes Asignados para Asesor */}
+        <Route path="/advisor/students" element={
+          <ProtectedRoute>
+            <AdvisorStudentsPage />
+          </ProtectedRoute>
+        } />
+        {/* 📚 RUTA: Recursos y Guías para Asesor */}
+        <Route path="/advisor/resources" element={
+          <ProtectedRoute>
+            <AdvisorResourcesPage />
           </ProtectedRoute>
         } />
 

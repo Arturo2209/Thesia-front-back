@@ -9,15 +9,23 @@ declare global {
 }
 
 const Login: React.FC = () => {
+  // Estado para redirección inmediata tras login
+  const [redirectPath, setRedirectPath] = useState<string | null>(null);
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
     // Verificar si ya está autenticado
     if (authService.isAuthenticated()) {
-      console.log('✅ Usuario ya autenticado, redirigiendo...');
-      navigate('/dashboard');
+      const user = authService.getStoredUser();
+      if (user?.role === 'asesor') {
+        navigate('/advisor/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
       return;
     }
 
@@ -103,6 +111,37 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleTraditionalLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    try {
+      const result = await authService.login({ email, password });
+      if (result.success && result.token && result.user) {
+        // Redirigir según rol usando estado para forzar render
+        if (result.user.role === 'asesor') {
+          setRedirectPath('/advisor/dashboard');
+        } else {
+          setRedirectPath('/dashboard');
+        }
+      } else {
+        setError(result.message || 'Credenciales incorrectas');
+      }
+    } catch (error: any) {
+      setError(error.message || 'Error de conexión');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Redirección segura tras login exitoso
+  React.useEffect(() => {
+    if (redirectPath) {
+      navigate(redirectPath, { replace: true });
+    }
+  }, [redirectPath, navigate]);
+
+  // ...existing code...
   return (
     <div className="login-bg">
       <div className="login-card">
@@ -133,21 +172,58 @@ const Login: React.FC = () => {
           </div>
         )}
 
-        {/* Botón de Google (será reemplazado por el componente de Google) */}
-        <div 
-          id="google-login-button"
-          className="login-google-btn"
-          onClick={!window.google ? handleFallbackLogin : undefined}
-          style={{
-            display: isLoading ? 'none' : 'flex'
-          }}
-        >
-          <img
-            src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg"
-            alt="Google"
-            className="login-google-icon"
-          />
-          Continuar con Gmail
+        {/* NUEVO: Separación visual y títulos */}
+        <div className="login-section">
+          <h3 className="login-title">Acceso para Asesores</h3>
+          <form onSubmit={handleTraditionalLogin} style={{ marginBottom: '16px', marginTop: '8px' }}>
+            <input
+              type="email"
+              placeholder="Correo institucional"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              style={{ width: '90%', padding: '8px', marginBottom: '8px', borderRadius: '6px', border: '1px solid #dadce0' }}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Contraseña"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              style={{ width: '90%', padding: '8px', marginBottom: '8px', borderRadius: '6px', border: '1px solid #dadce0' }}
+              required
+            />
+            <button
+              type="submit"
+              style={{ width: '95%', padding: '10px', borderRadius: '6px', background: '#1976d2', color: '#fff', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
+              disabled={isLoading}
+            >
+              Ingresar como Asesor
+            </button>
+          </form>
+        </div>
+
+        <div className="login-divider">
+          <span>O</span>
+        </div>
+
+        <div className="login-section">
+          <h3 className="login-title">Acceso para Alumnos</h3>
+          {/* Botón de Google (será reemplazado por el componente de Google) */}
+          <div 
+            id="google-login-button"
+            className="login-google-btn"
+            onClick={!window.google ? handleFallbackLogin : undefined}
+            style={{
+              display: isLoading ? 'none' : 'flex'
+            }}
+          >
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg"
+              alt="Google"
+              className="login-google-icon"
+            />
+            Continuar con Gmail
+          </div>
         </div>
 
         {/* Info adicional */}
@@ -172,7 +248,7 @@ const Login: React.FC = () => {
           box-shadow: 0 8px 32px rgba(0,0,0,0.15);
           padding: 0;
           width: 380px;
-          height: 320px;
+          min-height: 480px;
           text-align: center;
           position: relative;
           overflow: hidden;
@@ -201,11 +277,34 @@ const Login: React.FC = () => {
           white-space: nowrap;
           margin: 0;
         }
+        .login-section {
+          margin-top: 170px;
+          margin-bottom: 0;
+          padding: 0 24px;
+        }
+        .login-title {
+          font-size: 16px;
+          font-weight: 600;
+          color: #1976d2;
+          margin-bottom: 8px;
+          margin-top: 0;
+        }
+        .login-divider {
+          width: 100%;
+          text-align: center;
+          margin: 12px 0 0 0;
+        }
+        .login-divider span {
+          background: #fff;
+          color: #888;
+          padding: 2px 12px;
+          border-radius: 12px;
+          font-size: 13px;
+          font-weight: 500;
+          border: 1px solid #eee;
+        }
         .login-google-btn {
-          position: absolute;
-          bottom: 70px;
-          left: 50%;
-          transform: translateX(-50%);
+          margin-top: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -299,7 +398,7 @@ const Login: React.FC = () => {
         @media (max-width: 600px) {
           .login-card {
             width: 90vw;
-            height: 350px;
+            min-height: 520px;
           }
           .login-logo {
             width: 80px;
@@ -309,9 +408,12 @@ const Login: React.FC = () => {
             font-size: 13px;
             top: 150px;
           }
+          .login-section {
+            margin-top: 150px;
+            padding: 0 8px;
+          }
           .login-google-btn {
-            width: 280px;
-            bottom: 80px;
+            width: 240px;
           }
           .error-message {
             max-width: 250px;
@@ -321,6 +423,5 @@ const Login: React.FC = () => {
       `}</style>
     </div>
   );
-};
-
+}
 export default Login;

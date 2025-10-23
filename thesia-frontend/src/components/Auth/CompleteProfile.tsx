@@ -14,16 +14,17 @@ const CompleteProfile: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Obtener datos del usuario actual
+  // Obtener datos del usuario actual y redirigir si es asesor
+  const user = authService.getStoredUser();
   useEffect(() => {
-    const user = authService.getStoredUser();
-    if (user) {
+    if (user && user.role === 'asesor') {
+      navigate('/advisor/dashboard', { replace: true });
+    } else if (user) {
       // 🔧 SEPARAR NOMBRE Y APELLIDO DEL CAMPO NAME
       const fullName = user.name || '';
       const nameParts = fullName.split(' ');
       const firstName = nameParts.slice(0, 2).join(' ') || '';
       const lastName = nameParts.slice(2).join(' ') || '';
-
       setFormData(prev => ({
         ...prev,
         nombre: firstName,
@@ -31,8 +32,10 @@ const CompleteProfile: React.FC = () => {
         codigo_estudiante: user.codigo_estudiante || ''
       }));
     }
-  }, []);
-
+  }, [user, navigate]);
+  if (user && user.role === 'asesor') {
+    return null;
+  }
   const carreras = [
     'Administración de Negocios Internacionales',
     'Arquitectura de Plataformas y Servicios de TI',
@@ -65,81 +68,21 @@ const CompleteProfile: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-
     try {
-      // 🔧 VALIDACIONES ACTUALIZADAS
-      if (!formData.codigo_estudiante || formData.codigo_estudiante.length < 6) {
-        setError('El código de estudiante debe tener al menos 6 caracteres');
-        setIsLoading(false);
-        return;
-      }
-
-      if (!formData.carrera) {
-        setError('Por favor selecciona tu carrera');
-        setIsLoading(false);
-        return;
-      }
-
-      if (!formData.nombre.trim()) {
-        setError('Por favor ingresa tu nombre');
-        setIsLoading(false);
-        return;
-      }
-
-      if (!formData.apellido.trim()) {
-        setError('Por favor ingresa tu apellido');
-        setIsLoading(false);
-        return;
-      }
-
-      // 🔧 VALIDACIÓN DE CICLO
-      if (formData.ciclo !== 5 && formData.ciclo !== 6) {
-        setError('Solo se permiten estudiantes de V y VI ciclo');
-        setIsLoading(false);
-        return;
-      }
-
-      console.log('📝 Completando perfil con datos:', formData);
-
-      // 🔧 LLAMAR AL SERVICIO CON APELLIDO SEPARADO
-      const result = await authService.updateUserProfile({
-        carrera: formData.carrera,
-        ciclo: formData.ciclo,
-        codigo_estudiante: formData.codigo_estudiante,
-        nombre: formData.nombre,
-        apellido: formData.apellido // 🔧 NUEVO CAMPO
-      });
-
-      if (result.success) {
-        console.log('✅ Perfil completado exitosamente');
-        
-        // Actualizar datos locales
-        if (result.user) {
-          localStorage.setItem('user', JSON.stringify(result.user));
-          console.log('💾 Datos de usuario actualizados en localStorage');
-        }
-
-        if (result.token) {
-          localStorage.setItem('token', result.token);
-          console.log('🔑 Token actualizado');
-        }
-
-        // Mostrar mensaje de éxito y redirigir
-        console.log('🎉 Redirigiendo al dashboard...');
-        navigate('/dashboard', { replace: true });
-      } else {
-        console.error('❌ Error del servidor:', result.message);
-        setError(result.message || 'Error completando el perfil');
-      }
-
+      // ...existing code...
     } catch (error) {
-      console.error('❌ Error completando perfil:', error);
-      setError('Error de conexión con el servidor. Por favor intenta de nuevo.');
+      // ...existing code...
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Si el usuario es asesor, no renderizar nada (ya redirigido en useEffect)
+  if (user && user.role === 'asesor') {
+    return null;
+  }
+
+  // Render principal solo para estudiantes
   return (
     <div className="perfil-container">
       <div className="main-content-centered">
@@ -147,7 +90,6 @@ const CompleteProfile: React.FC = () => {
           <h1>🎓 THESIA - Sistema de Tesis</h1>
           <div className="notification-icon">🔔</div>
         </header>
-
         <div className="profile-section">
           <div className="profile-header">
             <div className="profile-icon">👤</div>
@@ -156,7 +98,6 @@ const CompleteProfile: React.FC = () => {
               <p>Para acceder al sistema completo, necesitamos tu información académica</p>
             </div>
           </div>
-
           <div className="info-banner">
             <div className="info-icon">ℹ️</div>
             <div>
@@ -164,7 +105,6 @@ const CompleteProfile: React.FC = () => {
               <p>Solo estudiantes de <strong>V y VI ciclo</strong> pueden registrar proyectos de tesis. Si estás en ciclos anteriores, podrás acceder cuando llegues al V ciclo.</p>
             </div>
           </div>
-
           {error && (
             <div className="error-banner">
               <div className="error-icon">⚠️</div>
@@ -181,7 +121,6 @@ const CompleteProfile: React.FC = () => {
               </button>
             </div>
           )}
-
           <form className="profile-form" onSubmit={handleSubmit}>
             <div className="form-row">
               <div className="form-group">
@@ -191,35 +130,12 @@ const CompleteProfile: React.FC = () => {
                   name="codigo_estudiante"
                   value={formData.codigo_estudiante}
                   onChange={handleInputChange}
-                  placeholder="Ej: 116534"
-                  maxLength={10}
+                  placeholder="Ej: 2020123456"
                   required
                   disabled={isLoading}
                 />
-                <small className="form-hint">Tu código único de estudiante TECSUP</small>
+                <small className="form-hint">Tu código institucional</small>
               </div>
-
-              <div className="form-group">
-                <label>Carrera Profesional *</label>
-                <select 
-                  name="carrera" 
-                  value={formData.carrera} 
-                  onChange={handleInputChange}
-                  required
-                  disabled={isLoading}
-                >
-                  <option value="">Selecciona tu carrera</option>
-                  {carreras.map((carrera) => (
-                    <option key={carrera} value={carrera}>
-                      {carrera}
-                    </option>
-                  ))}
-                </select>
-                <small className="form-hint">Tu programa académico actual en TECSUP</small>
-              </div>
-            </div>
-
-            <div className="form-row">
               <div className="form-group">
                 <label>Nombres *</label>
                 <input
@@ -233,7 +149,6 @@ const CompleteProfile: React.FC = () => {
                 />
                 <small className="form-hint">Solo tus nombres</small>
               </div>
-
               <div className="form-group">
                 <label>Apellidos *</label>
                 <input
@@ -248,7 +163,22 @@ const CompleteProfile: React.FC = () => {
                 <small className="form-hint">Tus apellidos completos</small>
               </div>
             </div>
-
+            <div className="form-group">
+              <label>Carrera *</label>
+              <select
+                name="carrera"
+                value={formData.carrera}
+                onChange={handleInputChange}
+                required
+                disabled={isLoading}
+              >
+                <option value="">Selecciona tu carrera</option>
+                {carreras.map((carrera) => (
+                  <option key={carrera} value={carrera}>{carrera}</option>
+                ))}
+              </select>
+              <small className="form-hint">Elige tu carrera profesional</small>
+            </div>
             <div className="form-group">
               <label>Ciclo Académico Actual *</label>
               <select 
@@ -268,7 +198,6 @@ const CompleteProfile: React.FC = () => {
                 ✅ Solo estudiantes de V y VI ciclo pueden acceder al sistema de tesis
               </small>
             </div>
-
             <button 
               type="submit" 
               className="submit-btn"
@@ -286,7 +215,6 @@ const CompleteProfile: React.FC = () => {
               )}
             </button>
           </form>
-
           <div className="welcome-note">
             <div className="note-header">
               <span className="note-icon">🎯</span>
@@ -306,7 +234,6 @@ const CompleteProfile: React.FC = () => {
           </div>
         </div>
       </div>
-
       <style>{`
         * {
           margin: 0;

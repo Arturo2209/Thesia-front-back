@@ -1,0 +1,5 @@
+.students-list-container { padding: 1rem; }
+.students-list { list-style: none; padding: 0; }
+.student-item { background: #f5f5f5; margin-bottom: 1rem; padding: 1rem; border-radius: 8px; }
+.student-name { font-weight: bold; color: #1976d2; }
+.student-details span { margin-right: 1rem; color: #333; }

@@ -1,4 +1,3 @@
-// 📋 TIPOS PRINCIPALES
 export interface Advisor {
     id: number;
     name: string;
@@ -18,7 +17,13 @@ export interface Advisor {
     specializations: string[];
   }
   
-  // 🎭 TIPOS PARA ESTADOS DEL COMPONENTE
+// 📊 DATOS PARA EL DASHBOARD DEL ASESOR
+export interface AdvisorDashboardData {
+  totalEstudiantes: number;
+  reunionesPendientes: number;
+  documentosPorRevisar: number;
+}
+  
   export type TabType = 'perfil' | 'comunicacion' | 'horarios';
   
   export interface AdvisorStats {

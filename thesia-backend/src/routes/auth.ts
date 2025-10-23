@@ -3,6 +3,7 @@ import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import { authenticateToken } from '../middleware/auth';
+import { login } from '../controllers/authController';
 
 const router = Router();
 
@@ -128,225 +129,49 @@ router.post('/google/verify', async (req, res) => {
 router.post('/update-profile', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        message: 'Token requerido'
-      });
+      return res.status(401).json({ success: false, message: 'Token requerido' });
     }
-
     const token = authHeader.substring(7);
     const jwtSecret = process.env.JWT_SECRET;
-    
     if (!jwtSecret) {
-      return res.status(500).json({
-        success: false,
-        message: 'Error de configuración del servidor'
-      });
+      return res.status(500).json({ success: false, message: 'Error de configuración del servidor' });
     }
-
     // Verificar JWT token
     const decoded = jwt.verify(token, jwtSecret) as any;
-    
-    const { carrera, ciclo, codigo_estudiante, nombre, apellido, profileCompleted } = req.body;
-
-    console.log('📝 === DATOS RECIBIDOS EN BACKEND ===');
-    console.log('Todos los campos:', req.body);
-    console.log('carrera:', carrera);
-    console.log('ciclo:', ciclo);
-    console.log('código_estudiante:', codigo_estudiante);
-    console.log('nombre:', nombre);
-    console.log('apellido:', apellido);
-    console.log('profileCompleted:', profileCompleted);
-    console.log('Usuario decodificado:', decoded.email);
-    console.log('=====================================');
-
-    // 🔧 VALIDACIONES ACTUALIZADAS
-    if (!carrera) {
-      return res.status(400).json({
-        success: false,
-        message: 'Carrera es requerida'
-      });
+    const { carrera, ciclo, codigo_estudiante, nombre, apellido } = req.body;
+    // Validar que el usuario tiene correo_institucional definido
+    if (!decoded.email || typeof decoded.email !== 'string') {
+      return res.status(400).json({ success: false, message: 'No se puede actualizar el perfil: usuario no válido o no es estudiante.' });
     }
-
-    if (!codigo_estudiante) {
-      return res.status(400).json({
-        success: false,
-        message: 'Código de estudiante es requerido'
-      });
-    }
-
-    if (!nombre || !nombre.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Nombre es requerido'
-      });
-    }
-
-    if (!apellido || !apellido.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Apellido es requerido'
-      });
-    }
-
-    // 🔧 NUEVA VALIDACIÓN: SOLO CICLOS 5 Y 6
-    const cicloNumber = parseInt(ciclo);
-    if (cicloNumber !== 5 && cicloNumber !== 6) {
-      console.log('❌ Ciclo no permitido:', cicloNumber);
-      return res.status(400).json({
-        success: false,
-        message: 'Solo se permiten estudiantes de V y VI ciclo para el registro de tesis'
-      });
-    }
-
-    console.log('✅ Ciclo válido:', cicloNumber);
-
-    // 🗄️ BUSCAR USUARIO EN BD
-    const user = await User.findOne({
-      where: { correo_institucional: decoded.email }
-    });
-
+    // Buscar usuario en BD
+    const user = await User.findOne({ where: { correo_institucional: decoded.email } });
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuario no encontrado en base de datos'
-      });
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado en base de datos' });
     }
-
-    console.log('👤 Usuario encontrado en BD - ANTES de actualizar:', {
-      id: user.id_usuario,
-      email: user.correo_institucional,
-      nombre_actual: user.nombre,
-      apellido_actual: user.apellido,
-      codigo_actual: user.codigo_estudiante,
-      ciclo_actual: user.ciclo_actual,
-      especialidad_actual: user.especialidad,
-      primer_acceso_antes: user.primer_acceso
-    });
-
-    // 🔄 ACTUALIZAR PERFIL EN BD
+    // Actualizar perfil en BD
     await user.updateProfile({
       carrera,
-      ciclo: cicloNumber,
+      ciclo,
       codigo_estudiante: codigo_estudiante.trim(),
       nombre: nombre.trim(),
       apellido: apellido.trim()
     });
-
-    console.log('✅ Perfil actualizado en BD - DESPUÉS:', {
-      id: user.id_usuario,
-      nombre_nuevo: user.nombre,
-      apellido_nuevo: user.apellido,
-      codigo_nuevo: user.codigo_estudiante,
-      ciclo_nuevo: user.ciclo_actual,
-      especialidad_nuevo: user.especialidad,
-      primer_acceso_despues: user.primer_acceso
+    // Generar nuevo JWT actualizado
+    const newToken = jwt.sign(user.toJWT(), jwtSecret, {
+      expiresIn: process.env.JWT_EXPIRES_IN || '24h',
+      issuer: 'thesia-backend',
+      audience: 'thesia-frontend'
     });
-
-    // Generar nuevo token con datos actualizados
-    const newToken = jwt.sign(
-      user.toJWT(),
-      jwtSecret,
-      { 
-        expiresIn: process.env.JWT_EXPIRES_IN || '24h',
-        issuer: 'thesia-backend',
-        audience: 'thesia-frontend'
-      }
-    );
-
-    console.log('📤 === RESPUESTA ENVIADA AL FRONTEND ===');
-    const responseData = {
-      success: true,
-      message: 'Perfil actualizado exitosamente',
-      user: user.toJWT(),
-      token: newToken
-    };
-    console.log('Datos de respuesta:', responseData);
-    console.log('Usuario en respuesta:', responseData.user);
-    console.log('========================================');
-
-    res.json(responseData);
-
-  } catch (error: unknown) {
-    console.error('❌ Error actualizando perfil:', error);
-    
-    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-    
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor',
-      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
-    });
-  }
-});
-
-// 👤 NUEVO ENDPOINT: Obtener usuario actual
-router.get('/me', authenticateToken, async (req, res) => {
-  try {
-    console.log('👤 Obteniendo usuario actual - ID:', (req as any).user?.id);
-    
-    const userId = (req as any).user?.id;
-    
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Token inválido - Usuario no identificado'
-      });
-    }
-
-    // 🔍 Buscar usuario en la base de datos usando el modelo User
-    const user = await User.findByPk(userId);
-
-    if (!user) {
-      console.log('❌ Usuario no encontrado en BD:', userId);
-      return res.status(404).json({
-        success: false,
-        message: 'Usuario no encontrado'
-      });
-    }
-
-    console.log('✅ Usuario encontrado:', {
-      id: user.id_usuario,
-      email: user.correo_institucional,
-      nombre: user.nombre,
-      apellido: user.apellido,
-      rol: user.rol,
-      estado: user.estado
-    });
-
-    // 🔒 Verificar que el usuario esté activo
-    if (user.estado !== 'activo') {
-      return res.status(403).json({
-        success: false,
-        message: 'Usuario inactivo'
-      });
-    }
-
-    // 📦 Respuesta formateada usando el método toJWT() existente
-    const userData = user.toJWT();
-
-    console.log('📤 Datos enviados al frontend:', userData);
-
-    res.json({
-      success: true,
-      user: userData,
-      message: 'Usuario obtenido exitosamente',
-      timestamp: new Date().toISOString()
-    });
-
+    res.json({ success: true, message: 'Perfil actualizado exitosamente', user: user.toJWT(), token: newToken });
   } catch (error: unknown) {
     console.error('❌ Error obteniendo usuario actual:', error);
-    
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-    
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor',
-      error: process.env.NODE_ENV === 'development' ? errorMessage : 'Error interno'
-    });
+    res.status(500).json({ success: false, message: 'Error interno del servidor', error: process.env.NODE_ENV === 'development' ? errorMessage : 'Error interno' });
   }
 });
+
+// POST /login para el login tradicional
+router.post('/login', login);
 
 export default router;
