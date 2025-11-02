@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import { authenticateToken } from '../middleware/auth';
 import { login } from '../controllers/authController';
+import sequelize from '../config/database';
 
 const router = Router();
 
@@ -173,5 +174,104 @@ router.post('/update-profile', async (req, res) => {
 
 // POST /login para el login tradicional
 router.post('/login', login);
+
+// GET /me - Obtener información del usuario autenticado
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    console.log('👤 === OBTENIENDO INFORMACIÓN DEL USUARIO ===');
+    console.log('ID:', userId);
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: 'Usuario no autenticado'
+      });
+      return;
+    }
+
+    // Obtener información del usuario con sus roles y permisos
+    const query = `
+      SELECT 
+        u.id_usuario,
+        u.nombre,
+        u.apellido,
+        u.correo_institucional,
+        u.rol,
+        u.especialidad,
+        u.avatar_url,
+        u.estado,
+        CASE 
+          WHEN u.rol = 'estudiante' THEN (
+            SELECT COUNT(*) 
+            FROM tesispretesis 
+            WHERE id_usuario_estudiante = u.id_usuario
+          )
+          WHEN u.rol = 'asesor' THEN (
+            SELECT COUNT(*) 
+            FROM tesispretesis 
+            WHERE id_asesor = u.id_usuario
+          )
+          ELSE 0
+        END as tesis_count
+      FROM usuario u
+      WHERE u.id_usuario = ?
+    `;
+
+    const [results] = await sequelize.query(query, {
+      replacements: [userId]
+    });
+
+    const users = results as any[];
+
+    if (users.length === 0) {
+      console.log('❌ Usuario no encontrado en la base de datos');
+      res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+      return;
+    }
+
+    const user = users[0];
+    console.log('✅ Usuario encontrado:', {
+      id: user.id_usuario,
+      email: user.correo_institucional,
+      role: user.rol
+    });
+
+    // Formatear respuesta
+    const formattedUser = {
+      id: user.id_usuario,
+      name: `${user.nombre} ${user.apellido}`.trim(),
+      email: user.correo_institucional,
+      role: user.rol,
+      specialty: user.especialidad || null,
+      avatar_url: user.avatar_url || null,
+      status: user.estado,
+      thesis_count: user.tesis_count,
+      permissions: {
+        can_upload_documents: user.rol === 'estudiante',
+        can_review_documents: user.rol === 'asesor',
+        can_schedule_meetings: true,
+        can_manage_thesis: user.rol === 'estudiante' || user.rol === 'asesor'
+      }
+    };
+
+    res.json({
+      success: true,
+      user: formattedUser
+    });
+
+  } catch (error) {
+    console.error('❌ Error obteniendo información del usuario:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: process.env.NODE_ENV === 'development' ? error : 'Error interno'
+    });
+  }
+});
 
 export default router;

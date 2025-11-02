@@ -11,17 +11,18 @@ interface DocumentoAttributes {
   version: number;
   tipo_entrega: string;
   formato_archivo: 'pdf' | 'docx';
-  fase: 'propuesta' | 'avance1' | 'avance2' | 'final';
+  fase: 'fase_1_plan_proyecto' | 'fase_2_diagnostico' | 'fase_3_marco_teorico' | 'fase_4_desarrollo' | 'fase_5_resultados';
   validado_por_asesor: boolean;
   estado: 'pendiente' | 'en_revision' | 'aprobado' | 'rechazado'; // ✅ NUEVO CAMPO
   tamaño_archivo?: number;
   fecha_creacion: Date;
   fecha_modificacion: Date;
+  comentarios?: string | null; // <-- Nuevo campo
 }
 
 // 🔧 ACTUALIZADO: Atributos opcionales para creación (incluyendo estado)
 interface DocumentoCreationAttributes extends Optional<DocumentoAttributes, 
-  'id_documento' | 'fecha_subida' | 'version' | 'validado_por_asesor' | 'estado' | 'tamaño_archivo' | 'fecha_creacion' | 'fecha_modificacion'> {}
+  'id_documento' | 'fecha_subida' | 'version' | 'validado_por_asesor' | 'estado' | 'tamaño_archivo' | 'fecha_creacion' | 'fecha_modificacion' | 'comentarios'> {}
 
 // 🔧 ACTUALIZADO: Definir el modelo con el nuevo campo
 class Documento extends Model<DocumentoAttributes, DocumentoCreationAttributes> 
@@ -35,12 +36,13 @@ class Documento extends Model<DocumentoAttributes, DocumentoCreationAttributes>
   declare version: number;
   declare tipo_entrega: string;
   declare formato_archivo: 'pdf' | 'docx';
-  declare fase: 'propuesta' | 'avance1' | 'avance2' | 'final';
+  declare fase: 'fase_1_plan_proyecto' | 'fase_2_diagnostico' | 'fase_3_marco_teorico' | 'fase_4_desarrollo' | 'fase_5_resultados';
   declare validado_por_asesor: boolean;
   declare estado: 'pendiente' | 'en_revision' | 'aprobado' | 'rechazado'; // ✅ NUEVO CAMPO
   declare tamaño_archivo?: number;
   declare fecha_creacion: Date;
   declare fecha_modificacion: Date;
+  declare comentarios?: string | null; // <-- Nuevo campo
 
   // Timestamps automáticos
   declare readonly createdAt: Date;
@@ -88,7 +90,13 @@ Documento.init({
     defaultValue: 'pdf',
   },
   fase: {
-    type: DataTypes.ENUM('propuesta', 'avance1', 'avance2', 'final'),
+    type: DataTypes.ENUM(
+      'fase_1_plan_proyecto',
+      'fase_2_diagnostico',
+      'fase_3_marco_teorico',
+      'fase_4_desarrollo',
+      'fase_5_resultados'
+    ),
     allowNull: false,
   },
   validado_por_asesor: {
@@ -102,6 +110,11 @@ Documento.init({
     defaultValue: 'pendiente',
     comment: 'Estado del documento: pendiente por revisar, en revisión por asesor, aprobado o rechazado'
   },
+    comentarios: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Comentarios del asesor sobre el avance/documento'
+    },
   tamaño_archivo: {
     type: DataTypes.BIGINT,
     allowNull: true,

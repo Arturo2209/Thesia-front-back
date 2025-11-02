@@ -22,16 +22,6 @@ const ThesisRegistered: React.FC<ThesisRegisteredProps> = ({
 
         <div className="content-section">
           <div className="thesis-registered-container">
-            <div className="success-header">
-              <div className="success-circle">
-                <span className="check-icon">✓</span>
-              </div>
-              <div className="success-info">
-                <h2>Mi Tesis</h2>
-                <p className="success-text">Tesis registrada exitosamente</p>
-              </div>
-            </div>
-
             <div className="thesis-layout">
               <div className="thesis-info-section">
                 <div className="info-card">

@@ -76,6 +76,9 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 // Middleware para verificar roles específicos
 export const requireRole = (roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
+    console.log('🔍 Middleware requireRole ejecutado');
+    console.log('🔍 Roles permitidos recibidos:', roles);
+
     if (!req.user) {
       console.log('❌ Usuario no autenticado en requireRole');
       res.status(401).json({
@@ -84,6 +87,8 @@ export const requireRole = (roles: string[]) => {
       });
       return;
     }
+
+    console.log('🔍 Verificando rol del usuario:', req.user.role);
 
     if (!roles.includes(req.user.role)) {
       console.log('❌ Rol no autorizado:', req.user.role, 'Roles requeridos:', roles);

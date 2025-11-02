@@ -94,7 +94,6 @@ const Notificaciones: React.FC = () => {
       <Sidebar onLogout={handleLogout} />
       
       <div className="main-content">
-        {/* 📱 HEADER PRINCIPAL - IGUAL A MI-TESIS */}
         <header className="main-header">
           <h1>Sistema de Tesis y Pretesis</h1>
           <div className="notification-icon">🔔</div>

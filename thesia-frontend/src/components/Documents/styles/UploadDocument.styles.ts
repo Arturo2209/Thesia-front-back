@@ -415,6 +415,8 @@ export const uploadDocumentStyles = `
     flex: 1;
     text-align: left;
     min-width: 0;
+    max-width: 100%;
+    width: 100%;
   }
 
   .file-name {
@@ -424,12 +426,19 @@ export const uploadDocumentStyles = `
     word-wrap: break-word;
     overflow-wrap: break-word;
     margin-bottom: 4px;
-    line-height: 1.3;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .file-size {
     font-size: 12px;
     color: #6b7280;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .file-actions {
@@ -715,6 +724,8 @@ export const uploadDocumentStyles = `
 
   .guide-info {
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .guide-info h4 {
@@ -722,6 +733,9 @@ export const uploadDocumentStyles = `
     color: #1f2937;
     font-size: 16px;
     font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .guide-info p {
@@ -729,6 +743,12 @@ export const uploadDocumentStyles = `
     color: #6b7280;
     font-size: 14px;
     line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
 
   .guide-meta {

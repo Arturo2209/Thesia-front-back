@@ -20,6 +20,7 @@ import tesisRouter from './routes/tesis';
 import documentosRouter from './routes/documentos'; // ✅ NUEVA IMPORTACIÓN
 import guiasRouter from './routes/guias';
 import notificationsRouter from './routes/notifications';
+import reunionesRouter from './routes/reuniones';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -55,6 +56,7 @@ app.use('/api/documents', documentosRouter); // ✅ NUEVA RUTA DE DOCUMENTOS
 app.use('/api/guides', guiasRouter);
 app.use('/api/auth', authRoutes);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/reuniones', reunionesRouter);  // ✅ NUEVA RUTA DE REUNIONES
 // 🚨 COMENTAR LAS RUTAS VIEJAS:
 // app.use('/api', apiRoutes);
 

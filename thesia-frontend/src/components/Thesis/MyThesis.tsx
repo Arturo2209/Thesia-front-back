@@ -691,3 +691,48 @@ const MyThesis: React.FC = () => {
 };
 
 export default MyThesis;
+
+// Added margin-left to ensure proper spacing between the sidebar and main content
+const updatedBaseStyles = `
+  .dashboard-container {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+  }
+
+  .main-content {
+    flex: 1;
+    padding: 20px;
+    margin-left: 250px; /* Adjusted to match the sidebar width */
+    overflow-y: auto;
+  }
+
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+
+  .spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(0, 0, 0, 0.1);
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
+// Replace baseStyles with updatedBaseStyles
+<style>{updatedBaseStyles}</style>

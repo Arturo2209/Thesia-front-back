@@ -1,5 +1,10 @@
 import { Router } from 'express';
 import authRoutes from './auth.js';
+import documentRoutes from './documentos';
+import reunionRoutes from './reuniones';
+import userRoutes from './users';
+import notificationRoutes from './notifications';
+import tesisRoutes from './tesis';
 
 const router = Router();
 
@@ -50,5 +55,30 @@ router.get('/users/test', (req, res) => {
 
 // Rutas de autenticación
 router.use('/auth', authRoutes);
+
+// Rutas de documentos
+router.use('/documents', documentRoutes);
+
+// Rutas de reuniones
+router.use('/reuniones', reunionRoutes);
+
+// Rutas de usuarios
+router.use('/users', userRoutes);
+
+// Rutas de notificaciones
+router.use('/notifications', notificationRoutes);
+
+// Rutas de tesis
+router.use('/tesis', tesisRoutes);
+
+// Rutas de asesor
+import advisorRoutes from './advisor';
+
+// Rutas de asesores unificadas
+router.use('/advisors', advisorRoutes);
+
+// Rutas de chat
+import chatRoutes from './chat';
+router.use('/chat', chatRoutes);
 
 export default router;

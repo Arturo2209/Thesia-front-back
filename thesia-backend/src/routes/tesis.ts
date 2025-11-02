@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
+import { body, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth';
 import sequelize from '../config/database';
+import { createTesis, getTesisByEstudiante, validateCreateTesis } from '../controllers/tesisController';
 
 console.log('🚀 ARCHIVO TESIS.TS CARGADO - VERSIÓN 4.1 - ERRORES TYPESCRIPT CORREGIDOS');
 
@@ -15,7 +17,20 @@ interface RegisterThesisRequest {
 }
 
 // 🔧 POST /api/thesis - CREAR NUEVA TESIS CON VALIDACIÓN DE CICLO
-router.post('/', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+router.post('/',
+  authenticateToken,
+  [
+    body('titulo').isString().notEmpty().isLength({ max: 150 }).withMessage('El título es obligatorio y debe tener máximo 150 caracteres'),
+    body('descripcion').isString().notEmpty().isLength({ max: 1000 }).withMessage('La descripción es obligatoria y debe tener máximo 1000 caracteres'),
+    body('ciclo').isIn(['V Ciclo', 'VI Ciclo']).withMessage('El ciclo debe ser "V Ciclo" o "VI Ciclo"'),
+    body('id_asesor').isInt({ min: 1 }).withMessage('El id_asesor debe ser un número entero positivo')
+  ],
+  async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({ success: false, errors: errors.array(), message: 'Parámetros inválidos' });
+      return;
+    }
   try {
     console.log('📝 === ENDPOINT POST /thesis EJECUTADO === ✅');
     console.log('👤 Usuario autenticado:', req.user?.email);
@@ -374,7 +389,20 @@ router.get('/my', authenticateToken, async (req: Request, res: Response): Promis
 });
 
 // 🔧 PUT /api/thesis/:id - ACTUALIZAR TESIS EXISTENTE
-router.put('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+import { param } from 'express-validator';
+
+router.put('/:id',
+  authenticateToken,
+  param('id').isInt({ min: 1 }).withMessage('ID de tesis inválido'),
+  (req: Request, res: Response, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({ success: false, errors: errors.array(), message: 'Parámetro id inválido' });
+      return;
+    }
+    next();
+  },
+  async (req: Request, res: Response): Promise<void> => {
   try {
     console.log('📝 === ENDPOINT PUT /thesis/:id EJECUTADO - MODO EDICIÓN === ✅');
     const { id } = req.params;
@@ -520,7 +548,18 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response): Promi
 });
 
 // 🔧 DELETE /api/thesis/:id - ELIMINAR TESIS (SOFT DELETE)
-router.delete('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+router.delete('/:id',
+  authenticateToken,
+  param('id').isInt({ min: 1 }).withMessage('ID de tesis inválido'),
+  (req: Request, res: Response, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({ success: false, errors: errors.array(), message: 'Parámetro id inválido' });
+      return;
+    }
+    next();
+  },
+  async (req: Request, res: Response): Promise<void> => {
   try {
     console.log('🗑️ === ENDPOINT DELETE /thesis/:id EJECUTADO === ✅');
     const { id } = req.params;
@@ -628,5 +667,11 @@ router.get('/debug', authenticateToken, async (req: Request, res: Response): Pro
     });
   }
 });
+
+// Endpoint: Crear tesis
+router.post('/create', authenticateToken, validateCreateTesis, createTesis);
+
+// Endpoint: Obtener tesis por estudiante
+router.get('/estudiante/:id_usuario_estudiante', authenticateToken, getTesisByEstudiante);
 
 export default router;

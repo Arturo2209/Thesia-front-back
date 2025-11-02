@@ -54,6 +54,11 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
 
   // 🔧 MÉTODO toJWT ACTUALIZADO para frontend
   public toJWT(): any {
+    console.log('🔍 Generando JWT payload para usuario:', {
+      id: this.id_usuario,
+      email: this.correo_institucional,
+      especialidad: this.especialidad
+    });
     return {
       id: this.id_usuario,
       email: this.correo_institucional,

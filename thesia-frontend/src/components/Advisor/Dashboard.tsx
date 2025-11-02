@@ -2,50 +2,86 @@ import React from 'react';
 import { useAdvisorDashboard } from './hooks/useAdvisorDashboard';
 import StudentsList from './StudentsList';
 import Sidebar from './Layout/Sidebar';
-console.log('[AdvisorDashboard] Renderizando Sidebar exclusivo del asesor');
+import { dashboardStyles } from './styles/Dashboard.styles';
+
+interface StatCardProps {
+  title: string;
+  value: number;
+  color: string;
+  description?: string;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ title, value, color, description }) => (
+  <div className="stat-card" style={{ borderColor: color }}>
+    <h3 className="stat-title">{title}</h3>
+    <span className="stat-value" style={{ color }}>{value}</span>
+    {description && <p className="stat-description">{description}</p>}
+  </div>
+);
 
 const AdvisorDashboard: React.FC = () => {
   const { data, loading, error } = useAdvisorDashboard();
 
-  console.log('[AdvisorDashboard] Renderizando dashboard...');
   return (
-    <div>
+    <div className="asesor-container">
       <Sidebar />
-      <main className="advisor-main-content">
-        <h1 style={{ color: '#1976d2' }}>Panel del Asesor</h1>
-        <p style={{ color: '#333' }}>Bienvenido al dashboard del asesor. Aquí verás tus reuniones próximas, estudiantes asignados y documentos pendientes de revisión.</p>
-        <div style={{ margin: '1rem 0', color: '#e91e63', fontWeight: 'bold' }}>
-          [LOG] Estado: {loading ? 'Cargando...' : error ? 'Error' : 'Listo'}
-        </div>
-        {loading ? (
-          <p style={{ color: '#1976d2', fontWeight: 'bold' }}>Cargando datos...</p>
-        ) : error ? (
-          <p style={{ color: 'red', fontWeight: 'bold' }}>Error: {error}</p>
-        ) : data ? (
-          <div style={{ display: 'flex', gap: '2rem', marginTop: '2rem' }}>
+      <div className="main-content">
+        <header className="main-header">
+          <h1>Sistema de Tesis y Pretesis</h1>
+          <div className="notification-icon">🔔</div>
+        </header>
+
+        <div className="dashboard-content">
+          <div className="dashboard-header">
             <div>
-              <h3>Estudiantes asignados</h3>
-              <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#4caf50' }}>{data.totalEstudiantes}</span>
+              <h2 className="dashboard-title">Panel del Asesor</h2>
+              <p className="dashboard-subtitle">
+                Bienvenido a tu espacio de gestión. Aquí encontrarás un resumen de tus actividades y responsabilidades.
+              </p>
             </div>
-            <div>
-              <h3>Reuniones pendientes</h3>
-              <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ff9800' }}>{data.reunionesPendientes}</span>
-            </div>
-            <div>
-              <h3>Documentos por revisar</h3>
-              <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#e91e63' }}>{data.documentosPorRevisar}</span>
-            </div>
+            
+            {loading && <div className="loading-indicator">Actualizando datos...</div>}
           </div>
-        ) : (
-          <p style={{ color: '#333', fontWeight: 'bold' }}>No se encontraron datos.</p>
-        )}
-        <div style={{ marginTop: '2rem' }}>
-          <StudentsList />
+
+          {error ? (
+            <div className="error-container">
+              <p className="error-message">{error}</p>
+              <button className="retry-button" onClick={() => window.location.reload()}>
+                Reintentar
+              </button>
+            </div>
+          ) : data ? (
+            <>
+              <div className="stats-grid">
+                <StatCard
+                  title="Estudiantes Asignados"
+                  value={data.totalEstudiantes}
+                  color="#4caf50"
+                  description="Tesistas bajo tu supervisión"
+                />
+                <StatCard
+                  title="Reuniones Pendientes"
+                  value={data.reunionesPendientes}
+                  color="#ff9800"
+                  description="Asesorías programadas"
+                />
+                <StatCard
+                  title="Documentos por Revisar"
+                  value={data.documentosPorRevisar}
+                  color="#e91e63"
+                  description="Documentos que requieren tu atención"
+                />
+              </div>
+
+              <section className="dashboard-section">
+                <h2 className="section-title">Estudiantes Asignados</h2>
+                <StudentsList />
+              </section>
+            </>
+          ) : null}
         </div>
-        <div style={{ marginTop: '2rem', color: '#1976d2', fontSize: '1rem' }}>
-          [LOG] Renderizado completo del dashboard asesor
-        </div>
-      </main>
+      </div>
+      <style>{dashboardStyles}</style>
     </div>
   );
 };

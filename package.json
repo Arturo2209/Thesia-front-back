@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "express-validator": "^7.3.0",
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {

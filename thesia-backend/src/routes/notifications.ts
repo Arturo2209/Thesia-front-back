@@ -1,14 +1,53 @@
 import { Router, Request, Response } from 'express';
+import { param, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth';
 import sequelize from '../config/database';
 import Notificacion, { crearNotificacion, crearNotificacionMasiva } from '../models/Notificacion';
+import { createNotification, getNotificationsByUser, validateCreateNotification } from '../controllers/notificationController';
 
 const router = Router();
 
 console.log('🔔 Cargando archivo notifications.ts...');
 
+// Endpoint: Crear notificación con validación
+router.post('/create', authenticateToken, validateCreateNotification, createNotification);
+
+// Endpoint: Obtener notificaciones por usuario
+router.get('/usuario/:id_usuario',
+  authenticateToken,
+  param('id_usuario').isInt({ min: 1 }).withMessage('ID de usuario inválido'),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array(), message: 'Parámetro id_usuario inválido' });
+    }
+    next();
+  },
+  getNotificationsByUser
+);
+
 // 📋 GET /api/notifications - Obtener notificaciones del usuario actual
-router.get('/', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+import { query } from 'express-validator';
+
+router.get('/',
+  authenticateToken,
+  [
+    query('page').optional().isInt({ min: 1 }).withMessage('El parámetro page debe ser un entero positivo'),
+    query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('El parámetro limit debe ser un entero positivo y máximo 100'),
+    query('tipo').optional().isString().isLength({ max: 50 }).withMessage('El tipo debe ser texto de máximo 50 caracteres'),
+    query('prioridad').optional().isString().isLength({ max: 20 }).withMessage('La prioridad debe ser texto de máximo 20 caracteres'),
+    query('leido').optional().isIn(['0', '1', 'true', 'false', 'all']).withMessage('El parámetro leido debe ser 0, 1, true, false o all'),
+    query('fecha_desde').optional().isISO8601().withMessage('El parámetro fecha_desde debe ser una fecha válida'),
+    query('fecha_hasta').optional().isISO8601().withMessage('El parámetro fecha_hasta debe ser una fecha válida')
+  ],
+  (req: Request, res: Response, next: Function) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array(), message: 'Parámetros de consulta inválidos' });
+    }
+    next();
+  },
+  async (req: Request, res: Response): Promise<void> => {
   try {
     console.log('🔔 === ENDPOINT GET /notifications EJECUTADO ===');
     const userId = (req as any).user?.id;

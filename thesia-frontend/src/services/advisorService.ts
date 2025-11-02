@@ -1,8 +1,60 @@
 import { apiService } from './api';
-import type { GetMyAdvisorResponse, Advisor } from '../components/Advisor/types/advisor.types';
+import type { AdvisorDocument } from '../components/Advisor/Documents/types/document.types';
+import type { GetMyAdvisorResponse } from '../components/Advisor/types/advisor.types';
 
 // 📡 SERVICIO PARA MI ASESOR
 export const advisorService = {
+  /**
+   * ✅ Aceptar avance/documento
+   */
+  async acceptDocument(documentId: number): Promise<{ success: boolean; message: string }> {
+    try {
+  const response = await apiService.put(`/advisor/progress/${documentId}/accept`, {});
+      return { success: true, message: response?.message || 'Avance aceptado' };
+    } catch (error) {
+      console.error('[AdvisorService] Error aceptando avance:', error);
+      return { success: false, message: 'Error al aceptar avance' };
+    }
+  },
+
+  /**
+   * ❌ Rechazar avance/documento
+   */
+  async rejectDocument(documentId: number): Promise<{ success: boolean; message: string }> {
+    try {
+  const response = await apiService.put(`/advisor/progress/${documentId}/reject`, {});
+      return { success: true, message: response?.message || 'Avance rechazado' };
+    } catch (error) {
+      console.error('[AdvisorService] Error rechazando avance:', error);
+      return { success: false, message: 'Error al rechazar avance' };
+    }
+  },
+  /**
+   * 📄 Obtener documentos/avances pendientes de revisión para el asesor
+   */
+  async getPendingDocuments(): Promise<AdvisorDocument[]> {
+    try {
+      const response = await apiService.get('/advisor/progress/requests');
+      // Suponiendo que el backend retorna un array de documentos con los campos correctos
+  return response as unknown as AdvisorDocument[];
+    } catch (error) {
+      console.error('[AdvisorService] Error obteniendo documentos pendientes:', error);
+      return [];
+    }
+  },
+
+  /**
+   * 💬 Agregar comentario del asesor a un avance/documento
+   */
+  async commentOnDocument(documentId: number, comentario: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await apiService.put(`/advisor/progress/${documentId}/comment`, { comentario });
+      return { success: true, message: response?.message || 'Comentario agregado' };
+    } catch (error) {
+      console.error('[AdvisorService] Error comentando documento:', error);
+      return { success: false, message: 'Error al agregar comentario' };
+    }
+  },
   /**
    * 🎯 Obtener MI asesor asignado
    */

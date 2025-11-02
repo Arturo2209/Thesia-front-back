@@ -1,6 +1,10 @@
 export const myDocumentsStyles = `
   .my-documents-container {
     width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   /* === LOADING & ERROR STATES === */
@@ -218,6 +222,9 @@ export const myDocumentsStyles = `
     display: flex;
     flex-direction: column;
     gap: 16px;
+    flex: 1;
+    overflow-y: auto;
+    padding: 1px;
   }
 
   .document-card {
@@ -239,25 +246,29 @@ export const myDocumentsStyles = `
   .document-info {
     flex: 1;
     min-width: 0;
+    max-width: calc(100% - 180px); /* Ancho máximo considerando el espacio para botones */
   }
 
   .document-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start; /* Cambiado a flex-start para mejor alineación con nombres largos */
     margin-bottom: 12px;
+    gap: 16px; /* Espacio entre nombre y badge */
   }
 
   .document-name {
     display: flex;
-    align-items: center;
+    align-items: flex-start; /* Alineación superior para nombres largos */
     gap: 12px;
     min-width: 0;
+    max-width: calc(100% - 100px); /* Espacio para el badge de estado */
   }
 
   .file-icon {
     font-size: 20px;
     flex-shrink: 0;
+    margin-top: 2px; /* Ajuste fino para alineación con texto */
   }
 
   .file-name {
@@ -267,6 +278,12 @@ export const myDocumentsStyles = `
     word-wrap: break-word;
     overflow-wrap: break-word;
     min-width: 0;
+    line-height: 1.4; /* Mejor espaciado entre líneas */
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Limita a 2 líneas */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* === STATUS BADGES === */
@@ -303,27 +320,35 @@ export const myDocumentsStyles = `
   /* === DOCUMENT META === */
   .document-meta {
     display: flex;
-    gap: 24px;
+    gap: 16px;
     margin-bottom: 16px;
     flex-wrap: wrap;
+    width: 100%;
+    max-width: 100%;
   }
 
   .meta-item {
     display: flex;
     align-items: center;
     gap: 4px;
+    white-space: nowrap; /* Evita saltos de línea dentro del item */
+    max-width: 100%;
   }
 
   .meta-label {
     font-size: 12px;
     color: #6b7280;
     font-weight: 500;
+    flex-shrink: 0; /* Evita que la etiqueta se encoja */
   }
 
   .meta-value {
     font-size: 12px;
     color: #374151;
     font-weight: 600;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
   }
 
   /* === COMMENT PREVIEW === */
@@ -333,6 +358,8 @@ export const myDocumentsStyles = `
     border-radius: 8px;
     border-left: 4px solid #3b82f6;
     margin-top: 8px;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .comment-header {
@@ -340,17 +367,23 @@ export const myDocumentsStyles = `
     align-items: center;
     gap: 8px;
     margin-bottom: 8px;
+    min-width: 0;
   }
 
   .comment-icon {
     font-size: 14px;
     color: #3b82f6;
+    flex-shrink: 0;
   }
 
   .comment-author {
     font-size: 12px;
     font-weight: 600;
     color: #3b82f6;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 200px;
   }
 
   .comment-text {
@@ -360,6 +393,10 @@ export const myDocumentsStyles = `
     line-height: 1.5;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   /* === ACTIONS === */
@@ -369,6 +406,7 @@ export const myDocumentsStyles = `
     gap: 8px;
     margin-left: 24px;
     flex-shrink: 0;
+    width: 150px; /* Ancho fijo para los botones */
   }
 
   .action-button {
@@ -451,6 +489,10 @@ export const myDocumentsStyles = `
 
   /* === RESPONSIVE === */
   @media (max-width: 1024px) {
+    .document-info {
+      max-width: 100%;
+    }
+
     .document-card {
       flex-direction: column;
       align-items: flex-start;
@@ -461,10 +503,17 @@ export const myDocumentsStyles = `
       margin-top: 16px;
       flex-direction: row;
       width: 100%;
+      justify-content: flex-start;
     }
 
     .action-button {
-      flex: 1;
+      flex: 0 1 auto;
+      min-width: 120px;
+      max-width: 200px;
+    }
+
+    .document-name {
+      max-width: calc(100% - 120px);
     }
   }
 
@@ -481,8 +530,12 @@ export const myDocumentsStyles = `
     }
 
     .document-meta {
-      flex-direction: column;
-      gap: 8px;
+      gap: 12px;
+    }
+
+    .meta-item {
+      width: auto;
+      max-width: 100%;
     }
 
     .search-filter-section {
@@ -491,6 +544,10 @@ export const myDocumentsStyles = `
 
     .document-card {
       padding: 16px;
+    }
+
+    .comment-author {
+      max-width: 150px;
     }
   }
 
@@ -511,18 +568,42 @@ export const myDocumentsStyles = `
       padding: 12px;
     }
 
+    .document-header {
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .document-name {
+      max-width: 100%;
+    }
+
+    .status-badge {
+      align-self: flex-start;
+    }
+
     .file-name {
       font-size: 14px;
+      -webkit-line-clamp: 3;
+    }
+
+    .document-actions {
+      flex-direction: column;
     }
 
     .action-button {
+      width: 100%;
+      max-width: none;
       padding: 8px 12px;
       font-size: 12px;
-      min-width: 100px;
     }
 
     .comment-preview {
       padding: 8px 12px;
+    }
+
+    .comment-text {
+      -webkit-line-clamp: 3;
     }
   }
 `;

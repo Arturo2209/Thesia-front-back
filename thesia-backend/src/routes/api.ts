@@ -4,6 +4,7 @@ import sequelize from '../config/database';
 import { Op } from 'sequelize';
 import User from '../models/User';
 import Thesis from '../models/Tesis';
+import { requireRole } from '../middleware/auth';
 
 const router = Router();
 
@@ -565,7 +566,7 @@ router.get('/users/search', verifyToken, async (req: any, res) => {
 });
 
 // 👨‍🏫 ENDPOINT: Obtener asesores disponibles
-router.get('/advisors', verifyToken, async (req: any, res) => {
+router.get('/advisors', verifyToken, requireRole(['estudiante', 'asesor', 'admin']), async (req: any, res) => {
   try {
     console.log('👨‍🏫 Endpoint /advisors ejecutado');
     

@@ -9,19 +9,29 @@ const resources: AdvisorResource[] = [
 
 const ResourcesList: React.FC = () => {
   return (
-    <div className="resources-list-container">
-      <h2>Recursos y Guías</h2>
-      <ul className="resources-list">
-        {resources.map(resource => (
-          <li key={resource.id} className="resource-item">
-            <div className="resource-title">{resource.title}</div>
-            <div className="resource-details">
-              <span>{resource.description}</span>
-              <a href={resource.url} target="_blank" rel="noopener noreferrer" className="resource-link">Descargar</a>
-            </div>
-          </li>
-        ))}
-      </ul>
+    <div className="dashboard-content">
+      <div className="dashboard-header">
+        <h2 className="dashboard-title">Recursos y Guías</h2>
+        <p className="dashboard-subtitle">
+          Materiales y plantillas para el desarrollo de tu tesis
+        </p>
+      </div>
+      
+      <div className="resources-list-container">
+        <ul className="resources-list">
+          {resources.map(resource => (
+            <li key={resource.id} className="resource-item">
+              <div className="resource-title">{resource.title}</div>
+              <div className="resource-details">
+                <span>{resource.description}</span>
+                <a href={resource.url} target="_blank" rel="noopener noreferrer" className="resource-link">
+                  Descargar
+                </a>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };

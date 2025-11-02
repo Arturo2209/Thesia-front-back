@@ -15,7 +15,12 @@
     "removeComments": true,
     "strict": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@middleware/*": ["middleware/*"],
+      "@config/*": ["config/*"]
+    }
   },
   "ts-node": {
     "esm": true

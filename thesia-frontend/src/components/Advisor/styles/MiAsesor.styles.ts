@@ -1,9 +1,20 @@
 export const miAsesorStyles = `
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    overflow-x: hidden;
+  }
+
   .asesor-container {
     display: flex;
     min-height: 100vh;
-    width: 100vw;
+    width: 100%;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    position: relative;
     overflow-x: hidden;
   }
 
@@ -12,7 +23,9 @@ export const miAsesorStyles = `
     margin-left: 280px;
     background: #f5f5f5;
     min-height: 100vh;
-    width: calc(100vw - 280px);
+    position: relative;
+    width: calc(100% - 280px);
+    overflow-x: hidden;
   }
 
   .main-header {
@@ -48,7 +61,7 @@ export const miAsesorStyles = `
 
   .asesor-section {
     padding: 32px;
-    max-width: 1200px;
+    max-width: 100%;
     margin: 0 auto;
   }
 

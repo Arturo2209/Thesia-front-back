@@ -5,11 +5,17 @@ export const dashboardStyles = `
     box-sizing: border-box;
   }
 
+  html, body {
+    overflow-x: hidden;
+  }
+
   .dashboard-container {
     display: flex;
     min-height: 100vh;
-    background: #f5f5f5;
+    width: 100%;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    position: relative;
+    overflow-x: hidden;
   }
 
   .main-content {
@@ -17,7 +23,9 @@ export const dashboardStyles = `
     margin-left: 280px;
     background: #f5f5f5;
     min-height: 100vh;
-    width: calc(100vw - 280px);
+    position: relative;
+    width: calc(100% - 280px);
+    overflow-x: hidden;
   }
 
   /* === HEADER === */
@@ -55,7 +63,7 @@ export const dashboardStyles = `
   /* === CONTENT SECTION === */
   .content-section {
     padding: 32px;
-    max-width: 1400px;
+    max-width: 100%;
     margin: 0 auto;
   }
 
@@ -598,14 +606,10 @@ export const dashboardStyles = `
   }
 
   /* === RESPONSIVE === */
-  @media (max-width: 1200px) {
+  @media (max-width: 1024px) {
     .main-content {
-      margin-left: 260px;
-      width: calc(100vw - 260px);
-    }
-
-    .content-section {
-      padding: 24px;
+      margin-left: 240px;
+      width: calc(100vw - 240px);
     }
 
     .dashboard-grid {

@@ -8,7 +8,9 @@ import Documento from '../models/Documento';
 import Tesis from '../models/Tesis';
 import User from '../models/User';
 import { authenticateToken } from '../middleware/auth';
-
+import { uploadDocument, getDocumentsByTesis, validateUploadDocument, validateDeleteDocumento, getPendingReview } from '../controllers/documentController';
+import { body, param, validationResult } from 'express-validator';
+import { mapPhaseToDatabase, mapPhaseToFrontend, mapStatusToFrontend, formatFileSize } from '../utils/helpers';
 const router = express.Router();
 
 // 🔧 SOLUCIÓN PARA __dirname EN ES MODULES
@@ -56,9 +58,8 @@ const storage = multer.diskStorage({
       console.log('✅ Usando nombre original:', cleanName);
       cb(null, cleanName);
     }
-  }
+  },
 });
-
 const upload = multer({
   storage,
   limits: {
@@ -84,6 +85,13 @@ const upload = multer({
     }
   }
 });
+
+// POST /api/documents/upload - Subir documento
+router.post('/upload',
+  authenticateToken,
+  upload.single('file'),
+  validateUploadDocument,
+  uploadDocument);
 
 // ✅ NUEVA FUNCIÓN: Obtener fases disponibles para el usuario
 async function getAvailablePhases(userId: number): Promise<string[]> {
@@ -119,21 +127,21 @@ async function getAvailablePhases(userId: number): Promise<string[]> {
     const availablePhases = ['fase_1_plan_proyecto']; // Siempre disponible
 
     // Lógica progresiva: Cada fase se desbloquea cuando la anterior está aprobada
-    if (fasesAprobadas.includes('propuesta')) {
+    if (fasesAprobadas.includes('fase_1_plan_proyecto')) {
       availablePhases.push('fase_2_diagnostico');
-      console.log('✅ Fase 2 desbloqueada: propuesta aprobada');
+      console.log('✅ Fase 2 desbloqueada: fase 1 aprobada');
     }
-    if (fasesAprobadas.includes('avance1')) {
+    if (fasesAprobadas.includes('fase_2_diagnostico')) {
       availablePhases.push('fase_3_marco_teorico');
-      console.log('✅ Fase 3 desbloqueada: avance1 aprobado');
+      console.log('✅ Fase 3 desbloqueada: fase 2 aprobada');
     }
-    if (fasesAprobadas.includes('avance2')) {
+    if (fasesAprobadas.includes('fase_3_marco_teorico')) {
       availablePhases.push('fase_4_desarrollo');
-      console.log('✅ Fase 4 desbloqueada: avance2 aprobado');
+      console.log('✅ Fase 4 desbloqueada: fase 3 aprobada');
     }
-    if (fasesAprobadas.includes('final')) {
+    if (fasesAprobadas.includes('fase_4_desarrollo')) {
       availablePhases.push('fase_5_resultados');
-      console.log('✅ Fase 5 desbloqueada: final aprobado');
+      console.log('✅ Fase 5 desbloqueada: fase 4 aprobada');
     }
 
     console.log('🎯 Fases disponibles calculadas:', availablePhases);
@@ -178,14 +186,12 @@ router.get('/available-phases', authenticateToken, async (req: Request, res: Res
         }))
       };
     }
-
     res.json({
       success: true,
       availablePhases,
       message: `${availablePhases.length} fase(s) disponible(s)`,
       debugInfo
     });
-
   } catch (error) {
     console.error('❌ Error obteniendo fases disponibles:', error);
     res.status(500).json({
@@ -196,8 +202,52 @@ router.get('/available-phases', authenticateToken, async (req: Request, res: Res
   }
 });
 
+// GET /api/documents/pending-review - Obtener documentos pendientes de revisión
+router.get('/pending-review', authenticateToken, getPendingReview);
+
 // 📋 GET /api/documents/my - Obtener documentos del estudiante CON FILTROS ✅ CORREGIDO
-router.get('/my', authenticateToken, async (req: Request, res: Response) => {
+router.get('/my',
+  authenticateToken,
+  // Validaciones de query params
+  [
+    // search: string opcional, máx 100 caracteres
+  (req: express.Request, res: express.Response, next: express.NextFunction) => {
+      if (req.query.search && typeof req.query.search === 'string' && req.query.search.length > 100) {
+        return res.status(400).json({ success: false, message: 'El parámetro search es demasiado largo' });
+      }
+      next();
+    },
+    // phase: string opcional, máx 50 caracteres
+  (req: express.Request, res: express.Response, next: express.NextFunction) => {
+      if (req.query.phase && typeof req.query.phase === 'string' && req.query.phase.length > 50) {
+        return res.status(400).json({ success: false, message: 'El parámetro phase es demasiado largo' });
+      }
+      next();
+    },
+    // status: string opcional, máx 50 caracteres
+  (req: express.Request, res: express.Response, next: express.NextFunction) => {
+      if (req.query.status && typeof req.query.status === 'string' && req.query.status.length > 50) {
+        return res.status(400).json({ success: false, message: 'El parámetro status es demasiado largo' });
+      }
+      next();
+    },
+    // startDate y endDate: deben ser fechas ISO válidas si existen
+  (req: express.Request, res: express.Response, next: express.NextFunction) => {
+      const isValidDate = (dateStr: any) => {
+        if (!dateStr) return true;
+        const d = new Date(dateStr);
+        return !isNaN(d.getTime());
+      };
+      if (req.query.startDate && !isValidDate(req.query.startDate)) {
+        return res.status(400).json({ success: false, message: 'El parámetro startDate no es una fecha válida' });
+      }
+      if (req.query.endDate && !isValidDate(req.query.endDate)) {
+        return res.status(400).json({ success: false, message: 'El parámetro endDate no es una fecha válida' });
+      }
+      next();
+    }
+  ],
+  async (req: Request, res: Response) => {
   try {
     console.log('📄 === OBTENIENDO DOCUMENTOS DEL ESTUDIANTE ===');
     console.log('Usuario ID:', (req as any).user?.id);
@@ -348,152 +398,15 @@ router.get('/my', authenticateToken, async (req: Request, res: Response) => {
   }
 });
 
-// 📤 POST /api/documents/upload - Subir documento CON VALIDACIÓN DE FASES ✅ MEJORADO
-router.post('/upload', authenticateToken, upload.single('file'), async (req: Request, res: Response) => {
-  try {
-    console.log('📤 === SUBIENDO DOCUMENTO ===');
-    console.log('Usuario ID:', (req as any).user?.id);
-    console.log('Archivo recibido:', req.file?.filename);
-    console.log('Datos del formulario:', req.body);
-    
-    const userId = (req as any).user?.id;
-    const { phase, description, chapterNumber } = req.body;
-    
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Usuario no autenticado'
-      });
-    }
-
-    if (!req.file) {
-      console.log('❌ No se recibió archivo');
-      return res.status(400).json({
-        success: false,
-        message: 'No se recibió ningún archivo'
-      });
-    }
-
-    if (!phase) {
-      return res.status(400).json({
-        success: false,
-        message: 'La fase es requerida'
-      });
-    }
-
-    // ✅ VALIDAR QUE LA FASE ESTÉ DISPONIBLE
-    console.log('🔍 Validando fase disponible:', phase);
-    const availablePhases = await getAvailablePhases(userId);
-    
-    if (!availablePhases.includes(phase)) {
-      console.log('❌ Fase no disponible:', phase);
-      console.log('Fases disponibles:', availablePhases);
-      
-      // Eliminar archivo subido ya que no se puede procesar
-      if (fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-        console.log('🗑️ Archivo eliminado por fase no válida');
-      }
-      
-      return res.status(400).json({
-        success: false,
-        message: 'No puedes subir documentos a esta fase aún. Completa y aprueba las fases anteriores primero.',
-        availablePhases,
-        currentPhase: phase,
-        hint: 'Necesitas que el asesor apruebe la fase anterior para desbloquear la siguiente.'
-      });
-    }
-
-    console.log('✅ Fase validada correctamente:', phase);
-
-    console.log('🔍 Buscando tesis del usuario:', userId);
-
-    // Buscar la tesis del estudiante
-    const tesis = await Tesis.findOne({
-      where: { id_usuario_estudiante: userId }
-    });
-
-    if (!tesis) {
-      console.log('❌ No se encontró tesis para el usuario');
-      
-      // Eliminar archivo subido
-      if (fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
-      
-      return res.status(400).json({
-        success: false,
-        message: 'No tienes una tesis registrada. Crea tu tesis primero.'
-      });
-    }
-
-    console.log('✅ Tesis encontrada:', tesis.id_tesis);
-
-    // 🔧 CORREGIDO: Crear el documento y hacer reload para obtener las fechas
-    const documento = await Documento.create({
-      id_tesis: tesis.id_tesis,
-      nombre_archivo: req.file.filename,
-      url_archivo: req.file.path,
-      tipo_entrega: description || phase,
-      formato_archivo: path.extname(req.file.originalname).toLowerCase() === '.pdf' ? 'pdf' : 'docx',
-      fase: mapPhaseToDatabase(phase),
-      tamaño_archivo: req.file.size,
-      validado_por_asesor: false,
-      estado: 'pendiente' // ✅ Estado inicial explícito
-    });
-
-    // 🔧 NUEVO: Hacer reload para obtener las fechas generadas por MySQL
-    await documento.reload();
-
-    console.log('✅ Documento creado en BD:', documento.id_documento);
-    console.log('📅 Fecha subida:', documento.fecha_subida);
-    console.log('📊 Estado inicial:', documento.estado);
-
-    // 🔧 CORREGIDO: Usar fechas con verificación
-    const fechaSubida = documento.fecha_subida || new Date();
-
-    // Respuesta al frontend
-    const responseDocument = {
-      id: documento.id_documento,
-      fileName: documento.nombre_archivo,
-      originalFileName: req.file.originalname,
-      phase: phase,
-      status: 'pendiente',
-      uploadDate: fechaSubida.toISOString(),
-      fileSizeDisplay: formatFileSize(req.file.size),
-      fileSize: req.file.size,
-      fileType: documento.formato_archivo.toUpperCase(),
-      chapterNumber: parseInt(chapterNumber) || 1,
-      description: description || null
-    };
-
-    console.log('✅ Respuesta preparada:', responseDocument);
-
-    res.json({
-      success: true,
-      message: 'Documento subido exitosamente',
-      document: responseDocument
-    });
-
-  } catch (error) {
-    console.error('❌ Error subiendo documento:', error);
-    
-    // Eliminar archivo si hubo error
-    if (req.file && fs.existsSync(req.file.path)) {
-      console.log('🗑️ Eliminando archivo por error:', req.file.path);
-      fs.unlinkSync(req.file.path);
-    }
-    
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor',
-      error: error instanceof Error ? error.message : 'Error desconocido'
-    });
-  }
-});
-
 // 📄 GET /api/documents/:id - Obtener detalles de un documento (🔧 CORREGIDO SIN INCLUDE)
-router.get('/:id', authenticateToken, async (req: Request, res: Response) => {
+router.get('/:id',
+  authenticateToken,
+  param('id').isInt({ min: 1 }).withMessage('ID de documento inválido'),
+  async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array(), message: 'Parámetros inválidos' });
+    }
   try {
     const documentId = parseInt(req.params.id);
     const userId = (req as any).user?.id;
@@ -596,7 +509,15 @@ router.get('/:id', authenticateToken, async (req: Request, res: Response) => {
 });
 
 // 🧪 DEBUG: Endpoint para diagnosticar el problema
-router.get('/:id/debug', authenticateToken, async (req: Request, res: Response) => {
+router.get('/:id/debug',
+  authenticateToken,
+  param('id').isInt({ min: 1 }).withMessage('ID de documento inválido'),
+  async (req: Request, res: Response) => {
+    // Validación de parámetros
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array(), message: 'Parámetros inválidos' });
+    }
   try {
     const documentId = parseInt(req.params.id);
     const userId = (req as any).user?.id;
@@ -693,69 +614,95 @@ router.get('/:id/debug', authenticateToken, async (req: Request, res: Response) 
   }
 });
 
-// 📥 GET /api/documents/:id/download - Descargar documento (sin cambios)
-router.get('/:id/download', authenticateToken, async (req: Request, res: Response) => {
-  try {
-    const documentId = parseInt(req.params.id);
-    const userId = (req as any).user?.id;
-
-    console.log('📥 === DESCARGANDO DOCUMENTO ===', documentId);
-
-    // 🔧 CORREGIDO: Sin include para evitar errores
-    const documento = await Documento.findByPk(documentId);
-
-    if (!documento) {
-      return res.status(404).json({
-        success: false,
-        message: 'Documento no encontrado'
-      });
+// 📥 GET /api/documents/:id/download - Descargar documento
+router.get('/:id/download',
+  authenticateToken,
+  param('id').isInt({ min: 1 }).withMessage('ID de documento inválido'),
+  async (req: Request, res: Response) => {
+    // Validación de parámetros
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array(), message: 'Parámetros inválidos' });
     }
 
-    // Verificar permisos por separado
-    const tesis = await Tesis.findOne({
-      where: { 
-        id_tesis: documento.id_tesis,
-        id_usuario_estudiante: userId 
+    try {
+      const documentId = parseInt(req.params.id);
+      const userId = (req as any).user?.id;
+
+      console.log('📥 === DESCARGANDO DOCUMENTO ===');
+      console.log('Document ID:', documentId);
+      console.log('User ID:', userId);
+
+      // Buscar el documento
+      const documento = await Documento.findByPk(documentId);
+
+      if (!documento) {
+        console.log('❌ Documento no encontrado');
+        return res.status(404).json({
+          success: false,
+          message: 'Documento no encontrado'
+        });
       }
-    });
 
-    if (!tesis) {
-      return res.status(403).json({
+      // Verificar permisos
+      const tesis = await Tesis.findOne({
+        where: {
+          id_tesis: documento.id_tesis,
+          [Op.or]: [
+            { id_usuario_estudiante: userId },
+            { id_asesor: userId }
+          ]
+        }
+      });
+
+      if (!tesis) {
+        console.log('❌ Usuario no autorizado');
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para descargar este documento'
+        });
+      }
+
+      // Verificar si el archivo existe
+      if (!fs.existsSync(documento.url_archivo)) {
+        console.log('❌ Archivo físico no encontrado:', documento.url_archivo);
+        return res.status(404).json({
+          success: false,
+          message: 'Archivo no encontrado en el servidor'
+        });
+      }
+
+      console.log('✅ Enviando archivo:', documento.nombre_archivo);
+
+      // Configurar headers para la descarga
+      res.setHeader('Content-Type', documento.formato_archivo === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename="${documento.nombre_archivo}"`);
+
+      // Enviar el archivo
+      const fileStream = fs.createReadStream(documento.url_archivo);
+      fileStream.pipe(res);
+
+    } catch (error) {
+      console.error('❌ Error descargando documento:', error);
+      res.status(500).json({
         success: false,
-        message: 'No tienes permisos para descargar este documento'
+        message: 'Error al descargar el documento',
+        error: error instanceof Error ? error.message : 'Error desconocido'
       });
     }
-
-    const filePath = documento.url_archivo;
-    
-    if (!fs.existsSync(filePath)) {
-      console.log('❌ Archivo no existe en:', filePath);
-      return res.status(404).json({
-        success: false,
-        message: 'Archivo no encontrado en el sistema'
-      });
-    }
-
-    console.log('✅ Enviando archivo:', filePath);
-
-    // Configurar headers para descarga
-    res.setHeader('Content-Disposition', `attachment; filename="${documento.nombre_archivo}"`);
-    res.setHeader('Content-Type', 'application/octet-stream');
-
-    // Enviar archivo
-    res.sendFile(path.resolve(filePath));
-
-  } catch (error) {
-    console.error('❌ Error descargando documento:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor'
-    });
-  }
 });
 
 // 🗑️ DELETE /api/documents/:id - Eliminar documento (✅ MEJORADO CON VALIDACIÓN DE ESTADO)
-router.delete('/:id', authenticateToken, async (req: Request, res: Response) => {
+router.delete('/:id',
+  authenticateToken,
+  param('id').isInt({ min: 1 }).withMessage('ID de documento inválido'),
+  validateDeleteDocumento,
+  async (req: Request, res: Response) => {
+    // Validación de parámetros
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array(), message: 'Parámetros inválidos' });
+    }
   try {
     const documentId = parseInt(req.params.id);
     const userId = (req as any).user?.id;
@@ -823,8 +770,26 @@ router.delete('/:id', authenticateToken, async (req: Request, res: Response) => 
   }
 });
 
-// 🔄 POST /api/documents/:id/resubmit - Resubir nueva versión de documento rechazado (sin cambios)
-router.post('/:id/resubmit', authenticateToken, upload.single('file'), async (req: Request, res: Response) => {
+// POST /api/documents/:id/resubmit - Resubir nueva versión de documento rechazado (sin cambios)
+router.post('/:id/resubmit',
+  authenticateToken,
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID de documento inválido'),
+    body('description').optional().isString().isLength({ max: 255 }).withMessage('Descripción demasiado larga'),
+    body('chapterNumber').optional().isInt({ min: 1, max: 50 }).withMessage('El número de capítulo debe ser un entero entre 1 y 50')
+  ],
+  upload.single('file'),
+  async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(400).json({ success: false, errors: errors.array(), message: 'Parámetros inválidos' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No se recibió ningún archivo' });
+    }
   try {
     const documentId = parseInt(req.params.id);
     const userId = (req as any).user?.id;
@@ -839,7 +804,7 @@ router.post('/:id/resubmit', authenticateToken, upload.single('file'), async (re
       });
     }
 
-    // 🔧 CORREGIDO: Sin include para evitar errores
+    //CORREGIDO: Sin include para evitar errores
     const documento = await Documento.findByPk(documentId);
 
     if (!documento) {
@@ -915,7 +880,6 @@ router.post('/:id/resubmit', authenticateToken, upload.single('file'), async (re
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
-    
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -1024,40 +988,4 @@ router.get('/stats', authenticateToken, async (req: Request, res: Response) => {
     });
   }
 });
-
-// === FUNCIONES HELPER ===
-function mapPhaseToFrontend(dbPhase: string): string {
-  const mapping: Record<string, string> = {
-    'propuesta': 'fase_1_plan_proyecto',
-    'avance1': 'fase_2_diagnostico',
-    'avance2': 'fase_3_marco_teorico',
-    'final': 'fase_4_desarrollo'
-  };
-  return mapping[dbPhase] || dbPhase;
-}
-
-function mapPhaseToDatabase(frontendPhase: string): 'propuesta' | 'avance1' | 'avance2' | 'final' {
-  const mapping: Record<string, 'propuesta' | 'avance1' | 'avance2' | 'final'> = {
-    'fase_1_plan_proyecto': 'propuesta',
-    'fase_2_diagnostico': 'avance1',
-    'fase_3_marco_teorico': 'avance2',
-    'fase_4_desarrollo': 'final',
-    'fase_5_resultados': 'final'
-  };
-  return mapping[frontendPhase] || 'propuesta';
-}
-
-function mapStatusToFrontend(estado: string): string {
-  // ✅ Usar directamente el campo estado
-  return estado;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
 export default router;

@@ -1,14 +1,22 @@
+import React from 'react';
 import ResourcesList from './components/ResourcesList';
 import Sidebar from '../Layout/Sidebar';
-console.log('[AdvisorResourcesPage] Renderizando Sidebar exclusivo del asesor');
+import { dashboardStyles } from '../../Dashboard/Dashboard.styles';
 
 const AdvisorResourcesPage = () => {
   return (
-    <div>
+    <div className="dashboard-container">
       <Sidebar />
-      <main className="advisor-main-content">
-        <ResourcesList />
-      </main>
+      <div className="main-content">
+        <header className="main-header">
+          <h1>Sistema de Tesis y Pretesis</h1>
+          <div className="notification-icon">🔔</div>
+        </header>
+        <div className="content-section">
+          <ResourcesList />
+        </div>
+      </div>
+      <style>{dashboardStyles}</style>
     </div>
   );
 };
