@@ -9,6 +9,9 @@ export const getMyAdvisor = async (req: Request, res: Response): Promise<void> =
 
     const userId = req.user?.id;
 
+    // Log para verificar el ID del usuario
+    console.log('🔍 ID del usuario:', userId);
+
     // 🔧 PASO 1: Buscar si el estudiante tiene un asesor asignado
     console.log('🔍 Buscando asesor asignado al estudiante...');
     
@@ -26,11 +29,17 @@ export const getMyAdvisor = async (req: Request, res: Response): Promise<void> =
       LIMIT 1
     `;
 
+    // Log para verificar la consulta SQL
+    console.log('🔧 Consulta SQL ejecutada:', assignmentQuery);
+
     const [assignmentResults] = await sequelize.query(assignmentQuery, {
       replacements: [userId]
     });
     
     const assignments = assignmentResults as any[];
+
+    // Log para verificar los resultados de la consulta
+    console.log('📊 Resultados de la consulta:', assignments);
 
     if (assignments.length === 0) {
       console.log('❌ No se encontró asesor asignado para el estudiante');
@@ -42,6 +51,9 @@ export const getMyAdvisor = async (req: Request, res: Response): Promise<void> =
       });
       return;
     }
+
+    // Log para verificar el asesor encontrado
+    console.log('✅ Asesor encontrado:', assignments[0]);
 
     const assignment = assignments[0];
     const advisorId = assignment.id_asesor;

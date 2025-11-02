@@ -32,10 +32,8 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-    console.log('🔍 Verificando token...', {
-      authHeader: authHeader ? 'Presente' : 'Ausente',
-      token: token ? 'Presente' : 'Ausente'
-    });
+    // Log para verificar el token recibido
+    console.log('🔍 Token recibido:', token);
 
     if (!token) {
       console.log('❌ Token no encontrado');
@@ -59,9 +57,11 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
         return;
       }
 
-      const payload = decoded as JwtPayload;
-      req.user = payload;
-      console.log('✅ Token verificado para usuario:', payload.email, 'Rol:', payload.role);
+      // Log para verificar el payload decodificado
+      console.log('✅ Token decodificado:', decoded);
+
+      // Asignar el usuario al objeto req
+      req.user = decoded as JwtPayload;
       next();
     });
   } catch (error) {

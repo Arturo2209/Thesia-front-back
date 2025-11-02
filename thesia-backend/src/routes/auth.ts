@@ -94,13 +94,13 @@ router.post('/google/verify', async (req, res) => {
 
     // Generar JWT con datos del usuario
     const jwtToken = jwt.sign(
-      user.toJWT(), // Convertir a formato frontend
-      jwtSecret,
-      { 
+      user.toJWT(),
+      jwtSecret as string,
+      {
         expiresIn: process.env.JWT_EXPIRES_IN || '24h',
         issuer: 'thesia-backend',
-        audience: 'thesia-frontend'
-      }
+        audience: 'thesia-frontend',
+      } as jwt.SignOptions
     );
 
     console.log('✅ JWT token generado exitosamente');
@@ -159,11 +159,15 @@ router.post('/update-profile', async (req, res) => {
       apellido: apellido.trim()
     });
     // Generar nuevo JWT actualizado
-    const newToken = jwt.sign(user.toJWT(), jwtSecret, {
-      expiresIn: process.env.JWT_EXPIRES_IN || '24h',
-      issuer: 'thesia-backend',
-      audience: 'thesia-frontend'
-    });
+    const newToken = jwt.sign(
+      user.toJWT(),
+      jwtSecret as string,
+      {
+        expiresIn: process.env.JWT_EXPIRES_IN || '24h',
+        issuer: 'thesia-backend',
+        audience: 'thesia-frontend',
+      } as jwt.SignOptions
+    );
     res.json({ success: true, message: 'Perfil actualizado exitosamente', user: user.toJWT(), token: newToken });
   } catch (error: unknown) {
     console.error('❌ Error obteniendo usuario actual:', error);

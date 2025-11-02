@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken, requireRole } from '@middleware/auth';
 import sequelize from '@config/database';
+import { getMyAdvisor } from '../controllers/myAdvisorController';
 
 const router = Router();
 
@@ -105,5 +106,8 @@ router.get('/', authenticateToken, requireRole(['estudiante', 'asesor', 'admin']
     });
   }
 });
+
+// GET /api/advisors/my-advisor - Obtener MI asesor asignado
+router.get('/my-advisor', authenticateToken, requireRole(['estudiante']), getMyAdvisor);
 
 export default router;
