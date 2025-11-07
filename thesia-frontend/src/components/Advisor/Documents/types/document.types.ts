@@ -1,5 +1,6 @@
 export interface AdvisorDocument {
   id: number;
+  studentId?: number;
   title: string;
   student: string;
   status: 'pendiente' | 'en_revision' | 'aprobado' | 'rechazado';

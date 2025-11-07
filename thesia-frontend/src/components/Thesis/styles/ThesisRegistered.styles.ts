@@ -1,14 +1,28 @@
 export const thesisRegisteredStyles = `
   .main-content {
-    position: fixed;
-    top: 0;
-    left: 280px;
-    right: 0;
-    bottom: 0;
-    background: #f5f5f5;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    overflow-y: auto;
-    overflow-x: hidden;
+    flex: 1;
+    margin-left: 280px; /* Ajuste para respetar el ancho del Sidebar */
+    padding: 32px;
+    max-width: calc(100vw - 280px); /* Ajuste dinámico para evitar espacio adicional */
+    background: #ffffff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 8px;
+  }
+
+  @media (max-width: 1024px) {
+    .main-content {
+      margin-left: 260px;
+      max-width: calc(100vw - 260px);
+      padding: 24px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .main-content {
+      margin-left: 0;
+      max-width: 100vw;
+      padding: 16px;
+    }
   }
 
   .main-header {
@@ -245,6 +259,11 @@ export const thesisRegisteredStyles = `
   }
 
   @media (max-width: 1024px) {
+    .main-content {
+      margin-left: calc(260px);
+      width: calc(100vw - 260px);
+    }
+
     .thesis-layout {
       grid-template-columns: 1fr;
     }
@@ -259,7 +278,8 @@ export const thesisRegisteredStyles = `
 
   @media (max-width: 768px) {
     .main-content {
-      left: 0;
+      margin-left: 0;
+      width: 100vw;
     }
 
     .content-section {
@@ -304,3 +324,6 @@ export const thesisRegisteredStyles = `
     }
   }
 `;
+
+export const styles = {
+};

@@ -1,5 +1,6 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
+import User from './User';
 
 // Definir atributos de la tesis según tu tabla existente
 interface TesisAttributes {
@@ -149,5 +150,16 @@ Tesis.init(
     ],
   }
 );
+
+// Definir relaciones
+Tesis.belongsTo(User, {
+  foreignKey: 'id_usuario_estudiante',
+  as: 'estudiante',
+});
+
+Tesis.belongsTo(User, {
+  foreignKey: 'id_asesor',
+  as: 'asesor',
+});
 
 export default Tesis;

@@ -96,15 +96,19 @@ export const getPendingReview = async (req: Request, res: Response) => {
             role: req.user?.role
         });
 
-        const query = `
-            SELECT DISTINCT d.*
-            FROM documento d
-            JOIN tesispretesis t ON d.id_tesis = t.id_tesis
-            WHERE t.id_asesor = ?
-            AND d.estado = 'pendiente'
-            AND d.validado_por_asesor = false
-            ORDER BY d.fecha_subida DESC
-        `;
+		const query = `
+			SELECT DISTINCT 
+				d.*, 
+				u.id_usuario AS id_estudiante,
+				CONCAT(u.nombre, ' ', u.apellido) AS estudiante
+			FROM documento d
+			JOIN tesispretesis t ON d.id_tesis = t.id_tesis
+			JOIN usuario u ON u.id_usuario = t.id_usuario_estudiante
+			WHERE t.id_asesor = ?
+			  AND d.estado = 'pendiente'
+			  AND d.validado_por_asesor = false
+			ORDER BY d.fecha_subida DESC
+		`;
 
         console.log('📝 Ejecutando consulta para documentos pendientes...');
         const [documents] = await sequelize.query(query, {
@@ -113,7 +117,7 @@ export const getPendingReview = async (req: Request, res: Response) => {
 
         console.log(`✅ Encontrados ${documents.length} documentos pendientes de revisión`);
 
-        return res.json({
+		return res.json({
             success: true,
             data: documents,
             count: documents.length

@@ -10,34 +10,26 @@ import { notificationsStyles } from './styles/Notifications.styles';
 const Notificaciones: React.FC = () => {
   const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
-  
-  // 🔔 Hook de notificaciones
+
   const {
-    // Estado
     notifications,
     loading,
     error,
     unreadCount,
     hasMore,
     filter,
-    
-    // Datos computados
     notificationsByType,
     notificationsByPriority,
     totalCount,
     hasUnread,
-    
-    // Acciones
     refresh,
     loadMore,
     markAsRead,
     markAllAsRead,
     deleteNotification,
-    updateFilter,
-    refreshUnreadCount
+    updateFilter
   } = useNotifications();
 
-  // 🔄 Manejar logout
   const handleLogout = async () => {
     try {
       await authService.logout();
@@ -47,7 +39,6 @@ const Notificaciones: React.FC = () => {
     }
   };
 
-  // 🔄 Manejar refrescar
   const handleRefresh = async () => {
     try {
       await refresh();
@@ -56,18 +47,15 @@ const Notificaciones: React.FC = () => {
     }
   };
 
-  // 🔍 Toggle filtros
   const toggleFilters = () => {
     setShowFilters(!showFilters);
   };
 
-  // ❌ Error state
   if (error) {
     return (
       <div className="notifications-container">
         <Sidebar onLogout={handleLogout} />
         <div className="main-content">
-          {/* 📱 HEADER PRINCIPAL - IGUAL A MI-TESIS */}
           <header className="main-header">
             <h1>Sistema de Tesis y Pretesis</h1>
             <div className="notification-icon">🔔</div>
@@ -92,18 +80,14 @@ const Notificaciones: React.FC = () => {
   return (
     <div className="notifications-container">
       <Sidebar onLogout={handleLogout} />
-      
       <div className="main-content">
         <header className="main-header">
           <h1>Sistema de Tesis y Pretesis</h1>
           <div className="notification-icon">🔔</div>
         </header>
 
-        {/* 📄 CONTENT SECTION - IGUAL A MI-TESIS */}
         <div className="content-section">
           <div className="notifications-page-container">
-            
-            {/* 📊 HEADER SECUNDARIO DE NOTIFICACIONES */}
             <header className="notifications-secondary-header">
               <div className="header-left">
                 <h2>
@@ -118,7 +102,6 @@ const Notificaciones: React.FC = () => {
               </div>
 
               <div className="header-actions">
-                {/* 🔍 TOGGLE FILTROS */}
                 <button
                   className={`filter-toggle ${showFilters ? 'active' : ''}`}
                   onClick={toggleFilters}
@@ -128,7 +111,6 @@ const Notificaciones: React.FC = () => {
                   {showFilters && <span className="toggle-indicator">×</span>}
                 </button>
 
-                {/* 🔄 REFRESCAR */}
                 <button
                   className="refresh-button"
                   onClick={handleRefresh}
@@ -138,7 +120,6 @@ const Notificaciones: React.FC = () => {
                   {loading ? '⏳' : '🔄'}
                 </button>
 
-                {/* 📖 MARCAR TODAS COMO LEÍDAS */}
                 {hasUnread && (
                   <button
                     className="mark-all-button"
@@ -151,7 +132,6 @@ const Notificaciones: React.FC = () => {
               </div>
             </header>
 
-            {/* 📊 ESTADÍSTICAS RÁPIDAS */}
             <div className="quick-stats">
               <div className="stat-card">
                 <span className="stat-icon">📋</span>
@@ -160,7 +140,7 @@ const Notificaciones: React.FC = () => {
                   <span className="stat-label">Total</span>
                 </div>
               </div>
-              
+
               <div className="stat-card unread">
                 <span className="stat-icon">🔔</span>
                 <div className="stat-details">
@@ -168,7 +148,7 @@ const Notificaciones: React.FC = () => {
                   <span className="stat-label">Sin leer</span>
                 </div>
               </div>
-              
+
               <div className="stat-card read">
                 <span className="stat-icon">✅</span>
                 <div className="stat-details">
@@ -176,21 +156,18 @@ const Notificaciones: React.FC = () => {
                   <span className="stat-label">Leídas</span>
                 </div>
               </div>
-              
-              {Object.entries(notificationsByType).length > 0 && (
-                <div className="stat-card priority">
-                  <span className="stat-icon">🚦</span>
+
+              {Object.entries(notificationsByType).map(([type, count]) => (
+                <div className="stat-card" key={type}>
+                  <span className="stat-icon">{type}</span>
                   <div className="stat-details">
-                    <span className="stat-number">
-                      {notificationsByPriority['alta'] || 0}
-                    </span>
-                    <span className="stat-label">Prioridad alta</span>
+                    <span className="stat-number">{count}</span>
+                    <span className="stat-label">{type}</span>
                   </div>
                 </div>
-              )}
+              ))}
             </div>
 
-            {/* 🔍 PANEL DE FILTROS (COLAPSIBLE) */}
             {showFilters && (
               <div className="filters-panel">
                 <div className="filters-header">
@@ -213,57 +190,14 @@ const Notificaciones: React.FC = () => {
               </div>
             )}
 
-            {/* 📋 LISTA DE NOTIFICACIONES */}
-            <div className="notifications-content">
-              <NotificationsList
-                notifications={notifications}
-                loading={loading}
-                hasMore={hasMore}
-                unreadCount={unreadCount}
-                onMarkAsRead={markAsRead}
-                onMarkAllAsRead={markAllAsRead}
-                onDelete={deleteNotification}
-                onLoadMore={loadMore}
-              />
-            </div>
-
-            {/* 💡 TIPS Y AYUDA */}
-            {totalCount === 0 && !loading && (
-              <div className="help-section">
-                <h3>💡 ¿Cómo funcionan las notificaciones?</h3>
-                <div className="help-grid">
-                  <div className="help-item">
-                    <span className="help-icon">📄</span>
-                    <div className="help-text">
-                      <h4>Documentos</h4>
-                      <p>Te notificamos cuando tu asesor revise tus documentos</p>
-                    </div>
-                  </div>
-                  <div className="help-item">
-                    <span className="help-icon">📅</span>
-                    <div className="help-text">
-                      <h4>Reuniones</h4>
-                      <p>Confirmaciones y recordatorios de tus citas</p>
-                    </div>
-                  </div>
-                  <div className="help-item">
-                    <span className="help-icon">⏰</span>
-                    <div className="help-text">
-                      <h4>Plazos</h4>
-                      <p>Recordatorios de fechas límite importantes</p>
-                    </div>
-                  </div>
-                  <div className="help-item">
-                    <span className="help-icon">💬</span>
-                    <div className="help-text">
-                      <h4>Comentarios</h4>
-                      <p>Feedback y sugerencias de tu asesor</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
+            <NotificationsList
+              notifications={notifications}
+              loading={loading}
+              hasMore={hasMore}
+              onMarkAsRead={(id) => markAsRead(Number(id))}
+              onDelete={(id) => deleteNotification(Number(id))}
+              onLoadMore={loadMore}
+            />
           </div>
         </div>
       </div>

@@ -44,4 +44,11 @@ export interface ApiResponse<T = any> {
       isVerified: boolean;
     };
     token?: string;
-}
+  }
+
+  export interface Notification {
+    id: number;
+    type: string;
+    message: string;
+    timeAgo: string;
+  }

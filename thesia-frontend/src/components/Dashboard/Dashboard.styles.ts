@@ -16,16 +16,17 @@ export const dashboardStyles = `
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     position: relative;
     overflow-x: hidden;
+    padding-left: 280px; /* Ajustado para evitar superposición con el sidebar */
   }
 
   .main-content {
     flex: 1;
-    margin-left: 280px;
     background: #f5f5f5;
     min-height: 100vh;
     position: relative;
-    width: calc(100% - 280px);
+    width: 100%;
     overflow-x: hidden;
+    transition: padding-left 0.3s ease; /* Transición suave para cambios de tamaño */
   }
 
   /* === HEADER === */
@@ -38,6 +39,8 @@ export const dashboardStyles = `
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     position: sticky;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 100;
   }
 
@@ -607,8 +610,12 @@ export const dashboardStyles = `
 
   /* === RESPONSIVE === */
   @media (max-width: 1024px) {
+    .dashboard-container {
+      padding-left: 240px; /* Ajustado para pantallas medianas */
+    }
+
     .main-content {
-      margin-left: 240px;
+      margin-left: 240px; /* Ajustado para pantallas medianas */
       width: calc(100vw - 240px);
     }
 
@@ -628,8 +635,12 @@ export const dashboardStyles = `
   }
 
   @media (max-width: 768px) {
+    .dashboard-container {
+      padding-left: 0; /* Ajustado para pantallas pequeñas */
+    }
+
     .main-content {
-      margin-left: 0;
+      margin-left: 0; /* Ajustado para pantallas pequeñas */
       width: 100vw;
     }
 

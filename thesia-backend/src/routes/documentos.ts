@@ -156,7 +156,14 @@ async function getAvailablePhases(userId: number): Promise<string[]> {
 // ✅ NUEVA RUTA: GET /api/documents/available-phases - Obtener fases disponibles
 router.get('/available-phases', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    // Validar req.user antes de usarlo
+    if (!req.user) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    // Asegurar que req.user.id esté definido
+    const userId = req.user.id;
+
     console.log('📋 === GET FASES DISPONIBLES ===', userId);
 
     const availablePhases = await getAvailablePhases(userId);
@@ -339,7 +346,7 @@ router.get('/my',
     console.log('📊 Documentos encontrados DESPUÉS de filtros:', documentos.length);
 
     // Mapear los documentos al formato esperado por el frontend
-    const mappedDocuments = documentos.map(doc => {
+  const mappedDocuments = documentos.map(doc => {
       console.log('📄 Procesando documento:', {
         id: doc.id_documento,
         nombre: doc.nombre_archivo,
@@ -360,7 +367,13 @@ router.get('/my',
         fileType: doc.formato_archivo.toUpperCase(),
         chapterNumber: 1,
         description: doc.tipo_entrega,
-        latestComment: null
+        latestComment: doc.comentarios ? {
+          id: 0,
+          comment: doc.comentarios,
+          advisorName: 'Asesor',
+          createdAt: (doc.fecha_modificacion || doc.fecha_subida || new Date()).toISOString(),
+          attachments: []
+        } : undefined
       };
     });
 
@@ -425,8 +438,8 @@ router.get('/:id',
     // 🔧 PASO 1: Buscar documento SIN include (para evitar errores de asociación)
     const documento = await Documento.findByPk(documentId);
 
+    // Validar que `documento` no sea null antes de usarlo
     if (!documento) {
-      console.log('❌ Documento no encontrado con ID:', documentId);
       return res.status(404).json({
         success: false,
         message: 'Documento no encontrado'
@@ -476,7 +489,13 @@ router.get('/:id',
       fileType: documento.formato_archivo.toUpperCase(),
       chapterNumber: 1,
       description: documento.tipo_entrega || 'Sin descripción',
-      comments: []
+      comments: documento.comentarios ? [{
+        id: 0,
+        comment: documento.comentarios,
+        advisorName: 'Asesor',
+        createdAt: fechaModificacion.toISOString(),
+        attachments: []
+      }] : []
     };
 
     console.log('✅ Respuesta preparada:', {
@@ -636,8 +655,8 @@ router.get('/:id/download',
       // Buscar el documento
       const documento = await Documento.findByPk(documentId);
 
+      // Validar que `documento` no sea null antes de usarlo
       if (!documento) {
-        console.log('❌ Documento no encontrado');
         return res.status(404).json({
           success: false,
           message: 'Documento no encontrado'
@@ -712,6 +731,7 @@ router.delete('/:id',
     // 🔧 CORREGIDO: Sin include para evitar errores
     const documento = await Documento.findByPk(documentId);
 
+    // Validar que `documento` no sea null antes de usarlo
     if (!documento) {
       return res.status(404).json({
         success: false,
@@ -807,6 +827,7 @@ router.post('/:id/resubmit',
     //CORREGIDO: Sin include para evitar errores
     const documento = await Documento.findByPk(documentId);
 
+    // Validar que `documento` no sea null antes de usarlo
     if (!documento) {
       return res.status(404).json({
         success: false,
@@ -988,4 +1009,5 @@ router.get('/stats', authenticateToken, async (req: Request, res: Response) => {
     });
   }
 });
+
 export default router;

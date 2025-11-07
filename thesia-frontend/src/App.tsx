@@ -13,6 +13,7 @@ import MiAsesor from './components/Advisor/components/MiAsesor';
 import RecursoGuia from './components/Progress/RecursoGuia';
 import Notificaciones from './components/Notifications/Notificaciones';
 import AdvisorDashboard from './components/Advisor/Dashboard';
+import StudentsView from './components/Advisor/Students/StudentsView';
 
 function App() {
   return (
@@ -91,7 +92,7 @@ function App() {
         {/* 👨‍🎓 RUTA: Estudiantes Asignados para Asesor */}
         <Route path="/advisor/students" element={
           <ProtectedRoute>
-            <AdvisorStudentsPage />
+            <StudentsView />
           </ProtectedRoute>
         } />
         {/* 📚 RUTA: Recursos y Guías para Asesor */}

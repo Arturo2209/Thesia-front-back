@@ -62,6 +62,8 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
       // Asignar el usuario al objeto req
       req.user = decoded as JwtPayload;
+
+      // Asegurar a TypeScript que req.user está definido
       next();
     });
   } catch (error) {

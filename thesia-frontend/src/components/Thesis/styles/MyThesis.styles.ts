@@ -16,9 +16,12 @@ export const baseStyles = `
 
   .main-content {
     flex: 1;
-    margin-left: 280px;
-    min-height: 100vh;
-    width: calc(100vw - 280px);
+    margin-left: 280px; /* Ajuste para respetar el ancho del Sidebar */
+    padding: 32px;
+    max-width: calc(100vw - 280px); /* Ajuste dinámico para evitar espacio adicional */
+    background: #ffffff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 8px;
   }
 
   .main-header {
@@ -94,7 +97,8 @@ export const baseStyles = `
   @media (max-width: 1024px) {
     .main-content {
       margin-left: 260px;
-      width: calc(100vw - 260px);
+      max-width: calc(100vw - 260px);
+      padding: 24px;
     }
 
     .content-section {
@@ -105,7 +109,8 @@ export const baseStyles = `
   @media (max-width: 768px) {
     .main-content {
       margin-left: 0;
-      width: 100vw;
+      max-width: 100vw;
+      padding: 16px;
     }
 
     .content-section {

@@ -21,6 +21,7 @@ import documentosRouter from './routes/documentos'; // ✅ NUEVA IMPORTACIÓN
 import guiasRouter from './routes/guias';
 import notificationsRouter from './routes/notifications';
 import reunionesRouter from './routes/reuniones';
+import advisorRouter from './routes/advisor'; // NUEVA IMPORTACIÓN
 
 // Cargar variables de entorno
 dotenv.config();
@@ -57,6 +58,7 @@ app.use('/api/guides', guiasRouter);
 app.use('/api/auth', authRoutes);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/reuniones', reunionesRouter);  // ✅ NUEVA RUTA DE REUNIONES
+app.use('/api/advisor', advisorRouter); // NUEVA RUTA PARA DOCUMENTOS DE ASESOR
 // 🚨 COMENTAR LAS RUTAS VIEJAS:
 // app.use('/api', apiRoutes);
 
@@ -66,6 +68,32 @@ console.log('   /api/thesis/* ← RUTAS CORREGIDAS CON JOIN Y DEBUG');
 console.log('   /api/documents/* ← NUEVAS RUTAS DE DOCUMENTOS'); // ✅ NUEVA LÍNEA
 console.log('   /api/auth/*');
 console.log('   🚨 /api/* DESHABILITADO - RUTAS VIEJAS');
+
+// Registrar rutas de la API
+import apiRoutes from './routes/api';
+console.log('🔧 Registrando rutas de la API en /api');
+app.use('/api', apiRoutes);
+
+// Verificar rutas registradas
+app._router.stack.forEach((middleware: any) => {
+  if (middleware.route) {
+    console.log(`✅ Ruta registrada: ${middleware.route.path}`);
+  }
+});
+
+// Log detallado de rutas registradas
+console.log('🔍 Verificando rutas registradas en el servidor:');
+app._router.stack.forEach((middleware: any) => {
+  if (middleware.route) {
+    console.log(`✅ Ruta registrada: ${middleware.route.path}`);
+  } else if (middleware.name === 'router') {
+    middleware.handle.stack.forEach((handler: any) => {
+      if (handler.route) {
+        console.log(`✅ Ruta registrada (subruta): ${handler.route.path}`);
+      }
+    });
+  }
+});
 
 // 🔧 ENDPOINTS MANUALES NECESARIOS (MIGRADOS DE api.ts)
 app.get('/api/test-connection', (req, res) => {

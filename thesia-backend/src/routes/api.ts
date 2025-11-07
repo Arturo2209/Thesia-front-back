@@ -157,6 +157,7 @@ const verifyToken = (req: any, res: any, next: any) => {
     req.user = decoded;
     
     console.log('🔐 Token verificado para usuario:', decoded.email);
+    console.log('🔍 Contenido del token decodificado:', decoded);
     next();
     
   } catch (error) {
@@ -830,6 +831,51 @@ router.get('/thesis/my', verifyToken, async (req: any, res) => {
           'Error interno'
       });
     }
+});
+
+// 👨‍🎓 ENDPOINT: Obtener estudiantes asignados al asesor
+router.get('/advisor/students', verifyToken, requireRole(['asesor']), async (req: any, res) => {
+  try {
+    console.log('👨‍🎓 Endpoint /advisor/students ejecutado');
+
+    const advisorId = req.user.id; // Cambiado de id_usuario a id
+
+    // Buscar estudiantes asignados al asesor a través de la tabla Tesis
+    const assignedStudents = await Thesis.findAll({
+      where: { id_asesor: advisorId },
+      include: [
+        {
+          model: User,
+          as: 'estudiante',
+          attributes: ['id_usuario', 'nombre', 'apellido', 'correo_institucional', 'especialidad'],
+        },
+      ],
+    });
+
+    console.log(`✅ Encontrados ${assignedStudents.length} estudiantes asignados`);
+
+    res.json({
+      success: true,
+      students: assignedStudents.map(tesis => {
+        const estudiante = tesis.get('estudiante') as User;
+        return {
+          id: estudiante.id_usuario,
+          name: `${estudiante.nombre} ${estudiante.apellido}`,
+          email: estudiante.correo_institucional,
+          specialty: estudiante.especialidad,
+        };
+      }),
+      total: assignedStudents.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo estudiantes asignados:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error obteniendo estudiantes asignados',
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    });
+  }
 });
 
 console.log('✅ Rutas de api.ts configuradas');

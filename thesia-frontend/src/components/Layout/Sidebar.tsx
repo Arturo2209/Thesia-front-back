@@ -162,7 +162,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
           position: fixed;
           left: 0;
           top: 0;
-          z-index: 100;
+          z-index: 50; /* Reducido para evitar conflictos con otros elementos */
           box-shadow: 2px 0 8px rgba(0,0,0,0.1);
         }
 
@@ -325,6 +325,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
           transform: translateY(-2px);
         }
 
+        .main-content {
+          margin-left: 280px; /* Ajustado para que el contenido principal no se superponga */
+          padding: 20px;
+          overflow-y: auto;
+        }
+
         @media (max-width: 1024px) {
           .sidebar {
             width: 260px;
@@ -338,7 +344,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
 
         @media (max-width: 768px) {
           .sidebar {
-            position: fixed;
+            position: absolute; /* Cambiado a absolute para pantallas pequeñas */
             transform: translateX(-100%);
             transition: transform 0.3s ease;
             z-index: 1000;
@@ -346,6 +352,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
           
           .sidebar-logo {
             width: 90px;
+          }
+
+          .main-content {
+            margin-left: 0;
           }
         }
       `}</style>

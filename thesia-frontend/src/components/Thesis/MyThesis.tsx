@@ -38,10 +38,10 @@ const MyThesis: React.FC = () => {
   const [filteredAdvisors, setFilteredAdvisors] = useState<Advisor[]>([]);
   const [selectedAdvisor, setSelectedAdvisor] = useState<number | null>(null);
 
-  // 🔧 ESTADO PARA MODO EDICIÓN
+  // ESTADO PARA MODO EDICIÓN
   const [isEditing, setIsEditing] = useState(false);
 
-  // 🔧 SOLO CICLOS V Y VI PERMITIDOS
+  // SOLO CICLOS V Y VI PERMITIDOS
   const cycles = ['V Ciclo', 'VI Ciclo'];
 
   // 🔧 INICIALIZACIÓN CON AUTO-RELLENO DE CICLO DESDE PERFIL
@@ -67,7 +67,7 @@ const MyThesis: React.FC = () => {
         
         setUser(storedUser);
 
-        // 🔧 AUTO-LLENAR CICLO DESDE EL PERFIL DEL USUARIO
+        // AUTO-LLENAR CICLO DESDE EL PERFIL DEL USUARIO
         let cicloFormateado = 'V Ciclo'; // Por defecto
         
         if (storedUser.ciclo) {
@@ -117,7 +117,7 @@ const MyThesis: React.FC = () => {
         ciclo: userToUse?.ciclo
       });
       
-      // 🔧 OBTENER MI TESIS (CON CICLO DESDE USUARIO VIA JOIN)
+      // OBTENER MI TESIS (CON CICLO DESDE USUARIO VIA JOIN)
       const myThesis = await thesisService.getMyThesis();
       console.log('📋 === RESPUESTA DE MI TESIS ===');
       console.log('Has Thesis:', myThesis.hasThesis);
@@ -135,7 +135,7 @@ const MyThesis: React.FC = () => {
         setHasThesis(true);
         setThesisData(myThesis.thesis);
         
-        // 🔧 CONFIGURAR FORMULARIO CON DATOS EXISTENTES
+        // CONFIGURAR FORMULARIO CON DATOS EXISTENTES
         const cicloFromProfile = userToUse?.ciclo;
         let cicloToUse = myThesis.thesis.ciclo; // Usar el ciclo que viene del backend (desde usuario)
         
@@ -685,54 +685,63 @@ const MyThesis: React.FC = () => {
         onErrorClose={() => setError('')}
         onAdvisorSelect={handleAdvisorSelect}
       />
-      <style>{baseStyles}</style>
+      <style>{`
+        .dashboard-container {
+          display: flex;
+          flex-direction: row;
+          height: 100vh;
+        }
+
+        .main-content {
+          flex: 1;
+          margin-left: 280px; /* Ajustado al ancho del Sidebar */
+          padding: 32px;
+          background: #ffffff;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          overflow-y: auto;
+        }
+
+        @media (max-width: 1024px) {
+          .main-content {
+            margin-left: 260px; /* Ajuste para pantallas más pequeñas */
+          }
+        }
+
+        @media (max-width: 768px) {
+          .main-content {
+            margin-left: 0; /* Ajuste para pantallas pequeñas */
+            width: 100vw;
+          }
+        }
+
+        .loading-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+        }
+
+        .spinner {
+          width: 50px;
+          height: 50px;
+          border: 5px solid rgba(0, 0, 0, 0.1);
+          border-top: 5px solid #3498db;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
     </div>
   );
 };
 
 export default MyThesis;
-
-// Added margin-left to ensure proper spacing between the sidebar and main content
-const updatedBaseStyles = `
-  .dashboard-container {
-    display: flex;
-    flex-direction: row;
-    height: 100vh;
-  }
-
-  .main-content {
-    flex: 1;
-    padding: 20px;
-    margin-left: 250px; /* Adjusted to match the sidebar width */
-    overflow-y: auto;
-  }
-
-  .loading-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-  }
-
-  .spinner {
-    width: 50px;
-    height: 50px;
-    border: 5px solid rgba(0, 0, 0, 0.1);
-    border-top: 5px solid #3498db;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-`;
-
-// Replace baseStyles with updatedBaseStyles
-<style>{updatedBaseStyles}</style>

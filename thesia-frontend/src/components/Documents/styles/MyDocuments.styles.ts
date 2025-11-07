@@ -449,6 +449,18 @@ export const myDocumentsStyles = `
     transform: translateY(-1px);
   }
 
+  .action-button.danger {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+
+  .action-button.danger:hover {
+    background: #fecaca;
+    color: #7f1d1d;
+    transform: translateY(-1px);
+  }
+
   .button-icon {
     font-size: 14px;
   }

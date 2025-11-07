@@ -7,11 +7,28 @@ export const thesisEditFormStyles = `
 
   .main-content {
     flex: 1;
-    margin-left: 280px;
-    background: #f5f5f5;
-    min-height: 100vh;
-    width: calc(100vw - 280px);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin-left: 280px; /* Ajuste para respetar el ancho del Sidebar */
+    padding: 32px;
+    max-width: calc(100vw - 280px); /* Ajuste dinámico para evitar espacio adicional */
+    background: #ffffff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 8px;
+  }
+
+  @media (max-width: 1024px) {
+    .main-content {
+      margin-left: 260px;
+      max-width: calc(100vw - 260px);
+      padding: 24px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .main-content {
+      margin-left: 0;
+      max-width: 100vw;
+      padding: 16px;
+    }
   }
 
   .main-header {
@@ -407,7 +424,7 @@ export const thesisEditFormStyles = `
 
   @media (max-width: 1024px) {
     .main-content {
-      margin-left: 260px;
+      margin-left: calc(260px);
       width: calc(100vw - 260px);
     }
 
