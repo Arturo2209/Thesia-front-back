@@ -152,9 +152,7 @@ class DocumentsService {
       if (uploadData.description) {
         formData.append('description', uploadData.description);
       }
-      if (uploadData.chapterNumber) {
-        formData.append('chapterNumber', uploadData.chapterNumber.toString());
-      }
+      // chapterNumber eliminado: no se envía
       
       const response = await apiService.post('/documents/upload', formData);
       

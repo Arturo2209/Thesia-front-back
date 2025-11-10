@@ -62,33 +62,23 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
       {/* Navegación */}
       <nav className="sidebar-nav">
         <div className={getActiveClass('/advisor/dashboard')} onClick={() => navigate('/advisor/dashboard')}>
-          <span className="nav-icon">🏠</span>
           <span className="nav-text">Panel Principal</span>
         </div>
         
         <div className={getActiveClass('/advisor/students')} onClick={() => navigate('/advisor/students')}>
-          <span className="nav-icon">👥</span>
           <span className="nav-text">Estudiantes</span>
         </div>
         
         <div className={getActiveClass('/advisor/documents')} onClick={() => navigate('/advisor/documents')}>
-          <span className="nav-icon">📄</span>
           <span className="nav-text">Documentos</span>
         </div>
         
         <div className={getActiveClass('/advisor/meetings')} onClick={() => navigate('/advisor/meetings')}>
-          <span className="nav-icon">📅</span>
           <span className="nav-text">Reuniones</span>
         </div>
         
         <div className={getActiveClass('/advisor/resources')} onClick={() => navigate('/advisor/resources')}>
-          <span className="nav-icon">📚</span>
-          <span className="nav-text">Recursos</span>
-        </div>
-        
-        <div className={getActiveClass('/advisor/guides')} onClick={() => navigate('/advisor/guides')}>
-          <span className="nav-icon">📖</span>
-          <span className="nav-text">Guías</span>
+          <span className="nav-text">Recursos y Guías</span>
         </div>
       </nav>
 
@@ -113,7 +103,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
           onClick={handleLogout}
           className="logout-btn"
         >
-          <span className="nav-icon">↗</span>
           <span className="nav-text">Cerrar Sesión</span>
         </button>
       </div>

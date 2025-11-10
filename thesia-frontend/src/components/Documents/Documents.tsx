@@ -37,6 +37,13 @@ const Documents: React.FC = () => {
     setSelectedDocumentId(null);
   };
 
+  const handleResubmitNavigate = (docId: number, phase: string) => {
+    // Limpiar selección y navegar a pestaña upload en modo resubmit
+    setSelectedDocumentId(null);
+    setActiveTab('upload');
+    setSearchParams({ tab: 'upload', resubmit: String(docId), phase });
+  };
+
   const handleRefresh = () => {
     setRefreshTrigger((prev) => prev + 1);
   };
@@ -53,12 +60,14 @@ const Documents: React.FC = () => {
   if (selectedDocumentId) {
     return (
       <div className="documents-container">
+        <style>{documentsStyles}</style>
         <Sidebar onLogout={handleLogout} />
         <div className="main-content">
           <DocumentDetail
             documentId={selectedDocumentId}
             onBack={handleBackToList}
             onRefresh={handleRefresh}
+            onResubmit={handleResubmitNavigate}
           />
         </div>
       </div>
@@ -110,6 +119,9 @@ const Documents: React.FC = () => {
                     handleRefresh();
                     handleTabChange('my-documents');
                   }}
+                  mode={searchParams.get('resubmit') ? 'resubmit' : 'upload'}
+                  documentId={searchParams.get('resubmit') ? Number(searchParams.get('resubmit')) : undefined}
+                  initialPhase={(searchParams.get('phase') as any) || undefined}
                 />
               )}
               {activeTab === 'history' && (

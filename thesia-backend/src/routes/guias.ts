@@ -199,7 +199,8 @@ router.get('/:id/download', authenticateToken, async (req: Request, res: Respons
 router.post('/upload', authenticateToken, upload.single('file'), async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
-    const userRole = (req as any).user?.rol;
+  // El middleware auth.ts coloca 'role' en req.user, no 'rol'
+  const userRole = (req as any).user?.role;
     const { description, phase } = req.body;
 
     console.log('📤 === ASESOR SUBIENDO GUÍA ===');
@@ -265,7 +266,7 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req: Req
 router.get('/uploaded', authenticateToken, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
-    const userRole = (req as any).user?.rol;
+  const userRole = (req as any).user?.role;
 
     console.log('📋 === OBTENIENDO GUÍAS SUBIDAS POR ASESOR ===', userId);
 
@@ -317,7 +318,7 @@ router.delete('/:id', authenticateToken, async (req: Request, res: Response) => 
   try {
     const guiaId = parseInt(req.params.id);
     const userId = (req as any).user?.id;
-    const userRole = (req as any).user?.rol;
+  const userRole = (req as any).user?.role;
 
     console.log('🗑️ === ELIMINANDO GUÍA ===', guiaId);
 
@@ -376,7 +377,7 @@ router.put('/:id/toggle', authenticateToken, async (req: Request, res: Response)
   try {
     const guiaId = parseInt(req.params.id);
     const userId = (req as any).user?.id;
-    const userRole = (req as any).user?.rol;
+  const userRole = (req as any).user?.role;
     const { active } = req.body;
 
     console.log('🔄 === CAMBIANDO ESTADO DE GUÍA ===', guiaId, active);

@@ -1,6 +1,6 @@
 import AdvisorResourcesPage from './components/Advisor/Resources';
-import AdvisorStudentsPage from './components/Advisor/Students';
 import AdvisorDocumentsPage from './components/Advisor/Documents';
+import AdvisorDocumentDetailPage from './components/Advisor/Documents/AdvisorDocumentDetailPage';
 import AdvisorThesesPage from './components/Advisor/Theses';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './components/Auth/Login';
@@ -14,6 +14,7 @@ import RecursoGuia from './components/Progress/RecursoGuia';
 import Notificaciones from './components/Notifications/Notificaciones';
 import AdvisorDashboard from './components/Advisor/Dashboard';
 import StudentsView from './components/Advisor/Students/StudentsView';
+import StudentDetailPage from './components/Advisor/Students/StudentDetailPage';
 
 function App() {
   return (
@@ -89,10 +90,22 @@ function App() {
             <AdvisorDocumentsPage />
           </ProtectedRoute>
         } />
+        {/* 📄 RUTA: Detalle de Documento (Asesor) */}
+        <Route path="/advisor/documents/:id" element={
+          <ProtectedRoute>
+            <AdvisorDocumentDetailPage />
+          </ProtectedRoute>
+        } />
         {/* 👨‍🎓 RUTA: Estudiantes Asignados para Asesor */}
         <Route path="/advisor/students" element={
           <ProtectedRoute>
             <StudentsView />
+          </ProtectedRoute>
+        } />
+        {/* 👤 RUTA: Detalle de Estudiante (Asesor) */}
+        <Route path="/advisor/students/:id" element={
+          <ProtectedRoute>
+            <StudentDetailPage />
           </ProtectedRoute>
         } />
         {/* 📚 RUTA: Recursos y Guías para Asesor */}

@@ -3,13 +3,17 @@ import documentsService from '../../../services/documentsService';
 import notificationsService from '../../../services/notificationsService';
 import thesisService from '../../../services/thesisService';
 import type { ThesisPhase, UploadDocumentRequest } from '../types/documents.types';
+import GuidesModal from './GuidesModal';
 import { uploadDocumentStyles } from '../styles/UploadDocument.styles';
 
 interface UploadDocumentProps {
   onUploadSuccess: () => void;
+  mode?: 'upload' | 'resubmit';
+  initialPhase?: ThesisPhase;
+  documentId?: number; // requerido en modo resubmit
 }
 
-const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
+const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess, mode = 'upload', initialPhase, documentId }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Estados del formulario
@@ -17,18 +21,21 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
     phase: ThesisPhase | '';
     file: File | null;
     description: string;
-    chapterNumber: number;
   }>({
-    phase: '',
+    phase: (initialPhase as ThesisPhase) || '',
     file: null,
-    description: '',
-    chapterNumber: 1
+    description: ''
   });
 
   // Estados para fases disponibles
   const [availablePhases, setAvailablePhases] = useState<string[]>(['fase_1_plan_proyecto']);
   const [loadingPhases, setLoadingPhases] = useState(true);
   const [phasesError, setPhasesError] = useState<string | null>(null);
+  const [sourceDoc, setSourceDoc] = useState<{
+    id: number;
+    originalFileName: string;
+    phase: ThesisPhase;
+  } | null>(null);
 
   // Estados de UI
   const [dragActive, setDragActive] = useState(false);
@@ -77,8 +84,46 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
 
   // Hook: Cargar fases al montar el componente
   useEffect(() => {
-    loadAvailablePhases();
-  }, []);
+    if (mode === 'upload') {
+      loadAvailablePhases();
+    } else {
+      // En reenvío, bloqueamos fase a la recibida
+      if (initialPhase) {
+        setAvailablePhases([initialPhase]);
+        setLoadingPhases(false);
+      }
+      // Traer datos del documento a reenviar (informativo)
+      if (documentId) {
+        (async () => {
+          try {
+            const resp = await documentsService.getDocumentDetail(documentId);
+            if (resp.success) {
+              setSourceDoc({
+                id: resp.document.id,
+                originalFileName: resp.document.originalFileName,
+                phase: resp.document.phase as ThesisPhase
+              });
+              // Prefijar fase si aún no está
+              setFormData(prev => ({
+                ...prev,
+                phase: (prev.phase || initialPhase || resp.document.phase) as ThesisPhase
+              }));
+            }
+          } catch (e) {
+            // no crítico
+            console.warn('No se pudo obtener detalle del documento a reenviar');
+          }
+        })();
+      }
+    }
+  }, [mode, initialPhase]);
+
+  // Asegurar que la fase esté seteada en reenvío si llega tarde
+  useEffect(() => {
+    if (mode === 'resubmit' && initialPhase && formData.phase !== initialPhase) {
+      setFormData(prev => ({ ...prev, phase: initialPhase }));
+    }
+  }, [mode, initialPhase]);
 
   // Función: Obtener texto legible de la fase
   const getPhaseText = (phase: string): string => {
@@ -235,7 +280,7 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
 
     if (!formData.phase) {
       newErrors.phase = 'Selecciona una fase';
-    } else if (!availablePhases.includes(formData.phase)) {
+    } else if (mode === 'upload' && !availablePhases.includes(formData.phase)) {
       newErrors.phase = `La fase "${getPhaseText(formData.phase)}" no está disponible aún`;
     }
 
@@ -267,8 +312,7 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
       const uploadData: UploadDocumentRequest = {
         phase: formData.phase as ThesisPhase,
         file: formData.file!,
-        description: formData.description || undefined,
-        chapterNumber: formData.chapterNumber
+        description: formData.description || undefined
       };
 
       console.log('📤 === SUBIENDO DOCUMENTO ===');
@@ -278,11 +322,13 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
         description: uploadData.description
       });
 
-      const response = await documentsService.uploadDocument(uploadData);
+      const response = mode === 'resubmit' && documentId
+        ? await documentsService.resubmitDocument(documentId, uploadData)
+        : await documentsService.uploadDocument(uploadData);
 
       if (response.success) {
         console.log('✅ Documento subido exitosamente');
-        setSuccess('¡Documento subido exitosamente! Será revisado por tu asesor.');
+  setSuccess(mode === 'resubmit' ? '¡Nueva versión enviada! Se reemplazó el archivo anterior.' : '¡Documento subido exitosamente! Será revisado por tu asesor.');
         
         // 🔔 CREAR NOTIFICACIONES - VERSIÓN CORREGIDA SIN DUPLICAR VARIABLES
         try {
@@ -335,10 +381,9 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
         
         // Limpiar formulario
         setFormData({
-          phase: '',
+          phase: mode === 'resubmit' ? (initialPhase as ThesisPhase) || '' : '',
           file: null,
-          description: '',
-          chapterNumber: 1
+          description: ''
         });
         
         // Reset input file
@@ -351,10 +396,10 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
           loadAvailablePhases();
         }, 1000);
 
-        // Notificar al padre después de 2 segundos
+        // Notificar al padre después de 1 segundo
         setTimeout(() => {
           onUploadSuccess();
-        }, 2000);
+        }, 1000);
 
       } else {
         throw new Error(response.message || 'Error subiendo documento');
@@ -384,19 +429,21 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
       {/* HEADER */}
       <div className="upload-header">
         <div className="header-content">
-          <h2>📤 Subir Documento</h2>
-          <p>Sube tu documento para que sea revisado por tu asesor</p>
+          <h2>{mode === 'resubmit' ? '🔄 Volver a Enviar' : '📤 Subir Documento'}</h2>
+          <p>{mode === 'resubmit' ? 'Sube una nueva versión para reemplazar el archivo actual' : 'Sube tu documento para que sea revisado por tu asesor'}</p>
         </div>
         <div className="header-actions">
           {/* 📚 BOTÓN DE GUÍAS */}
-          <button 
-            className="guides-button"
-            onClick={() => setShowGuides(true)}
-            type="button"
-          >
-            <span className="button-icon">📚</span>
-            Ver Guías
-          </button>
+              {mode === 'upload' && (
+            <button 
+              className="guides-button"
+              onClick={() => setShowGuides(true)}
+              type="button"
+            >
+              <span className="button-icon">📚</span>
+              Ver Guías
+            </button>
+          )}
           
           <div className="upload-tips">
             <div className="tip-icon">💡</div>
@@ -459,7 +506,7 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
               Selecciona la fase <span className="required">*</span>
             </label>
             
-            {loadingPhases ? (
+            {mode === 'upload' && loadingPhases ? (
               <div className="loading-select">
                 <div className="spinner-small"></div>
                 Cargando fases disponibles...
@@ -472,21 +519,21 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
                   phase: e.target.value as ThesisPhase 
                 }))}
                 className={`form-select ${errors.phase ? 'error' : ''}`}
-                disabled={uploading}
+                disabled={uploading || mode === 'resubmit'}
               >
                 <option value="">Selecciona una fase...</option>
                 
                 {/* OPCIONES DINÁMICAS BASADAS EN FASES DISPONIBLES */}
                 {['fase_1_plan_proyecto', 'fase_2_diagnostico', 'fase_3_marco_teorico', 'fase_4_desarrollo', 'fase_5_resultados'].map(phase => {
-                  const isAvailable = availablePhases.includes(phase);
+                  const isAvailable = mode === 'resubmit' ? phase === initialPhase : availablePhases.includes(phase);
                   return (
                     <option 
                       key={phase} 
                       value={phase}
                       disabled={!isAvailable}
-                      title={!isAvailable ? getPhaseUnavailableReason(phase) : ''}
+                      title={!isAvailable && mode==='upload' ? getPhaseUnavailableReason(phase) : ''}
                     >
-                      {getPhaseText(phase)} {!isAvailable ? '🔒' : ''}
+                      {getPhaseText(phase)} {!isAvailable && mode==='upload' ? '🔒' : ''}
                     </option>
                   );
                 })}
@@ -498,7 +545,7 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
             )}
             
             {/* MOSTRAR RAZÓN SI LA FASE NO ESTÁ DISPONIBLE */}
-            {formData.phase && !availablePhases.includes(formData.phase) && (
+            {mode==='upload' && formData.phase && !availablePhases.includes(formData.phase) && (
               <div className="phase-warning">
                 <div className="warning-icon">🔒</div>
                 <div className="warning-text">
@@ -508,24 +555,7 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
             )}
           </div>
 
-          {/* CHAPTER NUMBER */}
-          {formData.phase && (
-            <div className="form-group">
-              <label className="form-label">Número de Capítulo</label>
-              <input
-                type="number"
-                min="1"
-                max="10"
-                value={formData.chapterNumber}
-                onChange={(e) => setFormData(prev => ({ 
-                  ...prev, 
-                  chapterNumber: parseInt(e.target.value) || 1 
-                }))}
-                className="form-input"
-                disabled={uploading}
-              />
-            </div>
-          )}
+          {/* Campo 'Número de Capítulo' eliminado por no usarse en lógica de negocio */}
 
           {/* FILE UPLOAD */}
           <div className="form-group">
@@ -637,17 +667,17 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
               type="submit" 
               className="submit-button"
               disabled={
-                uploading || 
-                !formData.phase || 
-                !formData.file || 
-                !availablePhases.includes(formData.phase) ||
-                loadingPhases
+                uploading ||
+                !formData.phase ||
+                !formData.file ||
+                (mode === 'upload' && !availablePhases.includes(formData.phase)) ||
+                (mode === 'upload' && loadingPhases)
               }
             >
               {uploading ? (
                 <>
                   <span className="spinner-small"></span>
-                  Subiendo...
+                  {mode==='resubmit' ? 'Enviando...' : 'Subiendo...'}
                 </>
               ) : loadingPhases ? (
                 <>
@@ -657,7 +687,7 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
               ) : (
                 <>
                   <span className="button-icon">📤</span>
-                  Subir Documento
+                  {mode==='resubmit' ? 'Volver a Enviar' : 'Subir Documento'}
                 </>
               )}
             </button>
@@ -679,50 +709,21 @@ const UploadDocument: React.FC<UploadDocumentProps> = ({ onUploadSuccess }) => {
         </form>
       </div>
 
-      {/* MODAL DE GUÍAS */}
-      {showGuides && (
-        <div className="guides-modal-overlay" onClick={() => setShowGuides(false)}>
-          <div className="guides-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="guides-modal-header">
-              <h3>📚 Guías y Recursos</h3>
-              <button 
-                className="close-button"
-                onClick={() => setShowGuides(false)}
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="guides-modal-content">
-              <div className="guides-list">
-                {/* EJEMPLO DE GUÍA */}
-                <div className="guide-item">
-                  <div className="guide-icon">📄</div>
-                  <div className="guide-info">
-                    <h4>Plan_De_Proyecto_Modelo.docx</h4>
-                    <p>Plantilla oficial para estructurar tu documento de tesis</p>
-                    <div className="guide-meta">
-                      <span>📅 Subido hace 2 días</span>
-                      <span>👨‍🏫 Por tu asesor</span>
-                    </div>
-                  </div>
-                  <button className="download-guide-btn">
-                    ⬇️ Descargar
-                  </button>
-                </div>
-                
-                {/* MENSAJE SI NO HAY GUÍAS */}
-                <div className="no-guides">
-                  <div className="no-guides-icon">📚</div>
-                  <div className="no-guides-text">
-                    <h4>No hay guías disponibles</h4>
-                    <p>Tu asesor aún no ha subido guías para tu tesis. Las guías aparecerán aquí cuando estén disponibles.</p>
-                  </div>
-                </div>
-              </div>
+      {mode === 'resubmit' && sourceDoc && (
+        <div className="info-section" style={{ marginTop: 12 }}>
+          <div className="info-icon">ℹ️</div>
+          <div className="info-content">
+            <div className="info-title">Reenviando documento</div>
+            <div className="info-text">
+              Archivo actual: <strong>{sourceDoc.originalFileName}</strong> • Fase: <strong>{getPhaseText(sourceDoc.phase)}</strong>
             </div>
           </div>
         </div>
+      )}
+
+      {/* MODAL DE GUÍAS (DINÁMICO) */}
+      {showGuides && (
+        <GuidesModal onClose={() => setShowGuides(false)} currentPhase={formData.phase} />
       )}
 
       <style>{uploadDocumentStyles}</style>

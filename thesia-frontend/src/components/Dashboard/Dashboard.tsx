@@ -2,19 +2,17 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../Layout/Sidebar';
 import authService from '../../services/authService';
-import { useDashboardData } from './hooks/useDashboardData';  // ✅ IMPORTAR EL HOOK
+import { useDashboardData } from './hooks/useDashboardData';  // Importar hook
 import { dashboardStyles } from './Dashboard.styles';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   
-  // ✅ USAR EL HOOK EN LUGAR DE useState MANUAL
+  // Usar el hook en lugar de gestionar estado manual
   const { 
     loading, 
     error, 
     data: dashboardData, 
-    connectionStatus,
-    refresh,
     retry 
   } = useDashboardData();
 
@@ -28,11 +26,11 @@ const Dashboard: React.FC = () => {
   };
 
   const handleRegisterThesis = () => {
-    console.log('📝 Navegando a registro de tesis...');
+    console.log('Navegando a registro de tesis');
     navigate('/mi-tesis');
   };
 
-  // 🔄 LOADING STATE
+  // Loading state
   if (loading) {
     return (
       <div className="dashboard-container">
@@ -48,7 +46,7 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  // ❌ ERROR STATE
+  // Error state
   if (error) {
     return (
       <div className="dashboard-container">
@@ -72,23 +70,14 @@ const Dashboard: React.FC = () => {
       <Sidebar onLogout={handleLogout} />
       
       <div className="main-content">
-        {/* HEADER */}
+        {/* Header */}
         <header className="main-header">
-          <h1>¡Bienvenid@ {dashboardData?.user?.name || 'Usuario'}! 👋</h1>
+          <h1>¡Bienvenid@ {dashboardData?.user?.name || 'Usuario'}!</h1>
           <div className="notification-icon">🔔</div>
         </header>
         
         <div className="content-section">
-          {/* CONNECTION STATUS */}
-          <div className={`connection-status ${connectionStatus}`}>
-            <span className="connection-icon">🔗</span>
-            <span className="connection-text">
-              {connectionStatus === 'connected' && '✅ Backend conectado'}
-              {connectionStatus === 'checking' && '🔄 Verificando conexión...'}
-              {connectionStatus === 'error' && '❌ Error de conexión'}
-            </span>
-          </div>
-
+          {/* Connection status removed by request */}
           {/* ALERT BANNER - SOLO SI NO TIENE TESIS */}
           {!dashboardData?.thesis?.hasThesis && (
             <div className="alert-banner">
@@ -105,7 +94,7 @@ const Dashboard: React.FC = () => {
             </div>
           )}
 
-          {/* USER INFO SECTION */}
+          {/* Sección de información de usuario */}
           <div className="user-info-section">
             <h4>{dashboardData?.user?.roleDisplay || 'Estudiante'}</h4>
             <p>
@@ -114,13 +103,13 @@ const Dashboard: React.FC = () => {
             </p>
           </div>
 
-          {/* DASHBOARD GRID */}
+          {/* Grid principal del dashboard */}
           <div className="dashboard-grid">
             
-            {/* LEFT COLUMN */}
+            {/* Columna izquierda */}
             <div className="left-column">
               
-              {/* PROGRESS CARD */}
+              {/* Tarjeta de progreso de tesis */}
               <div className="dashboard-card">
                 <div className="card-header">
                   <h3>Progreso de Tesis</h3>
@@ -151,7 +140,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* STATS GRID */}
+              {/* Grid de estadísticas */}
               <div className="stats-grid">
                 <div className="stat-card blue">
                   <div className="stat-icon">📊</div>
@@ -175,7 +164,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* ACTIVITIES CARD */}
+              {/* Tarjeta de actividad reciente */}
               <div className="dashboard-card">
                 <div className="card-header">
                   <h3>Actividad Reciente</h3>
@@ -214,10 +203,10 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* RIGHT COLUMN */}
+            {/* Columna derecha */}
             <div className="right-column">
               
-              {/* QUICK ACTIONS */}
+              {/* Acciones rápidas */}
               <div className="dashboard-card">
                 <div className="card-header">
                   <h3>Acciones Rápidas</h3>
@@ -242,7 +231,7 @@ const Dashboard: React.FC = () => {
                         )}
                       </button>
                     )) || (
-                      // Fallback si no hay quick actions
+                      // Fallback si no hay acciones rápidas configuradas
                       <>
                         <button className="action-button" onClick={() => navigate('/mi-tesis')}>
                           <span className="action-icon">📝</span>
@@ -271,7 +260,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* ADVISOR CARD - ✅ MEJORADO CON DATOS DEL HOOK */}
+              {/* Tarjeta de asesor */}
               <div className="dashboard-card">
                 <div className="card-header">
                   <h3>Mi Asesor</h3>
@@ -311,7 +300,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* PENDING TASKS - ✅ NUEVO CON DATOS DEL HOOK */}
+              {/* Tareas pendientes */}
               {dashboardData?.pendingTasks && dashboardData.pendingTasks.length > 0 && (
                 <div className="dashboard-card">
                   <div className="card-header">

@@ -32,7 +32,7 @@ export interface Document {
   fileSizeDisplay: string;
   fileSize: number;
   fileType: string;
-  chapterNumber: number;
+  // chapterNumber eliminado: no se usa en UI ni backend
   description?: string;
   latestComment?: Comment;
 }
@@ -49,7 +49,7 @@ export interface DocumentDetail {
   fileSizeDisplay: string;
   fileSize: number;
   fileType: string;
-  chapterNumber: number;
+  // chapterNumber eliminado: no se usa en UI ni backend
   description?: string;
   comments: Comment[];
 }
@@ -68,7 +68,6 @@ export interface UploadDocumentRequest {
   phase: ThesisPhase;
   file: File;
   description?: string;
-  chapterNumber: number;
 }
 
 // === RESPONSES ===

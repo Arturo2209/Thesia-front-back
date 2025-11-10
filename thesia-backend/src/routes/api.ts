@@ -4,6 +4,8 @@ import sequelize from '../config/database';
 import { Op } from 'sequelize';
 import User from '../models/User';
 import Thesis from '../models/Tesis';
+import Documento from '../models/Documento';
+import { mapPhaseToFrontend } from '../utils/helpers';
 import { requireRole } from '../middleware/auth';
 
 const router = Router();
@@ -836,44 +838,77 @@ router.get('/thesis/my', verifyToken, async (req: any, res) => {
 // 👨‍🎓 ENDPOINT: Obtener estudiantes asignados al asesor
 router.get('/advisor/students', verifyToken, requireRole(['asesor']), async (req: any, res) => {
   try {
-    console.log('👨‍🎓 Endpoint /advisor/students ejecutado');
+    console.log('👨‍🎓 Endpoint /advisor/students ejecutado (enriquecido)');
 
-    const advisorId = req.user.id; // Cambiado de id_usuario a id
+    const advisorId = req.user.id;
 
-    // Buscar estudiantes asignados al asesor a través de la tabla Tesis
-    const assignedStudents = await Thesis.findAll({
+    // Traer tesis del asesor
+    const tesisRows = await Thesis.findAll({
       where: { id_asesor: advisorId },
       include: [
         {
           model: User,
           as: 'estudiante',
-          attributes: ['id_usuario', 'nombre', 'apellido', 'correo_institucional', 'especialidad'],
-        },
+          attributes: ['id_usuario', 'nombre', 'apellido', 'correo_institucional', 'especialidad']
+        }
       ],
+      order: [['fecha_creacion', 'DESC']]
     });
 
-    console.log(`✅ Encontrados ${assignedStudents.length} estudiantes asignados`);
+    console.log(`📚 Tesis encontradas para asesor: ${tesisRows.length}`);
+
+    const enriched = [] as any[];
+
+    for (const tesis of tesisRows) {
+      const estudiante = tesis.get('estudiante') as User | null;
+
+      // Documentos de la tesis
+      const documentos = await Documento.findAll({
+        where: { id_tesis: tesis.id_tesis },
+        order: [['fecha_subida', 'ASC']]
+      });
+
+      const aprobados = documentos.filter(d => d.estado === 'aprobado');
+      let faseDerivada: string | null = null;
+      if (aprobados.length > 0) {
+        faseDerivada = aprobados[aprobados.length - 1].fase;
+      } else if (documentos.length > 0) {
+        faseDerivada = documentos[documentos.length - 1].fase;
+      }
+
+      // Mapear fase derivada a representación frontend (mantener código si helper devuelve humano, para consistencia en TU UI que convierte a label)
+      const faseFrontend = faseDerivada ? mapPhaseToFrontend(faseDerivada) : null;
+
+      enriched.push({
+        id: estudiante ? estudiante.id_usuario : tesis.id_usuario_estudiante,
+        name: estudiante ? `${estudiante.nombre} ${estudiante.apellido}` : 'Desconocido',
+        email: estudiante?.correo_institucional || 'Sin correo',
+        specialty: estudiante?.especialidad || 'Sin especialidad',
+        thesisTitle: tesis.titulo || 'Sin título',
+        thesisPhaseActual: tesis.fase_actual, // enum propuesta/desarrollo/revision/sustentacion
+        phaseRaw: faseDerivada,
+        phase: faseDerivada || tesis.fase_actual || null, // entregar código para que front lo formatee
+        derivedPhaseLabel: faseFrontend, // opcional para debug
+        assignedDate: tesis.fecha_creacion ? tesis.fecha_creacion.toISOString().substring(0,10) : null,
+        documentsCount: documentos.length,
+        approvedCount: aprobados.length
+      });
+    }
+
+    console.log(`✅ Estudiantes enriquecidos: ${enriched.length}`);
 
     res.json({
       success: true,
-      students: assignedStudents.map(tesis => {
-        const estudiante = tesis.get('estudiante') as User;
-        return {
-          id: estudiante.id_usuario,
-          name: `${estudiante.nombre} ${estudiante.apellido}`,
-          email: estudiante.correo_institucional,
-          specialty: estudiante.especialidad,
-        };
-      }),
-      total: assignedStudents.length,
-      timestamp: new Date().toISOString(),
+      students: enriched,
+      total: enriched.length,
+      meta: { advisorId, generatedAt: new Date().toISOString() }
     });
   } catch (error) {
-    console.error('❌ Error obteniendo estudiantes asignados:', error);
+    console.error('❌ Error obteniendo estudiantes asignados (enriquecido):', error);
     res.status(500).json({
       success: false,
       message: 'Error obteniendo estudiantes asignados',
-      error: error instanceof Error ? error.message : 'Error desconocido',
+      error: error instanceof Error ? error.message : 'Error desconocido'
     });
   }
 });

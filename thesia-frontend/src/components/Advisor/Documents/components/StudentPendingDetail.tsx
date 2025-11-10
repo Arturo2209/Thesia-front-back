@@ -1,12 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import advisorService from '../../../../services/advisorService';
 import type { AdvisorDocument } from '../types/document.types';
 import { myDocumentsStyles } from '../../../Documents/styles/MyDocuments.styles';
+import documentsService from '../../../../services/documentsService';
 
 interface Props {
   studentId?: number;
   student: string;
   onBack: () => void;
+  hideBackButton?: boolean;
 }
 
 const statusClass = (s: AdvisorDocument['status']) => {
@@ -19,12 +22,15 @@ const statusClass = (s: AdvisorDocument['status']) => {
   }
 };
 
-const StudentPendingDetail: React.FC<Props> = ({ studentId, student, onBack }) => {
+const StudentPendingDetail: React.FC<Props> = ({ studentId, student, onBack, hideBackButton }) => {
   const [docs, setDocs] = useState<AdvisorDocument[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<AdvisorDocument | null>(null);
-  const [comment, setComment] = useState('');
-  const [saving, setSaving] = useState(false);
+  const navigate = useNavigate();
+
+  // Filtros estilo estudiante
+  const [searchTerm, setSearchTerm] = useState('');
+  const [phaseFilter, setPhaseFilter] = useState<string | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<AdvisorDocument['status'] | 'all'>('all');
 
   useEffect(() => {
     (async () => {
@@ -36,34 +42,58 @@ const StudentPendingDetail: React.FC<Props> = ({ studentId, student, onBack }) =
     })();
   }, [studentId, student]);
 
-  const handleApprove = async (doc: AdvisorDocument) => {
-    await advisorService.approveDocument(doc.id);
-    setDocs(prev => prev.filter(d => d.id !== doc.id));
-  };
-
-  const handleReject = async (doc: AdvisorDocument) => {
-    await advisorService.rejectDocument(doc.id);
-    setDocs(prev => prev.filter(d => d.id !== doc.id));
-  };
-
-  const handleSaveComment = async () => {
-    if (!selected) return;
-    setSaving(true);
-    await advisorService.commentOnDocument(selected.id, comment);
-    setSaving(false);
-    setSelected(null);
-    setComment('');
-  };
+  // Approve/Reject and comment actions se realizan en el detalle
 
   // const phases = useMemo(() => Array.from(new Set(docs.map(d => d.phase))).filter(Boolean) as string[], [docs]);
+
+  // Opciones de filtros calculadas
+  const phaseOptions = useMemo(() => {
+    const set = new Set<string>();
+    docs.forEach(d => { if (d.phase) set.add(d.phase); });
+    return Array.from(set);
+  }, [docs]);
+
+  const filteredDocs = useMemo(() => {
+    return docs.filter(d => {
+      const matchSearch = searchTerm
+        ? `${d.title} ${d.student} ${d.description ?? ''}`
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
+        : true;
+      const matchPhase = phaseFilter === 'all' ? true : d.phase === phaseFilter;
+      const matchStatus = statusFilter === 'all' ? true : d.status === statusFilter;
+      return matchSearch && matchPhase && matchStatus;
+    });
+  }, [docs, searchTerm, phaseFilter, statusFilter]);
+
+  // Descargar documento como en vista estudiante
+  const handleDownload = async (document: AdvisorDocument) => {
+    try {
+      const blob = await documentsService.downloadDocument(document.id);
+      const url = window.URL.createObjectURL(blob);
+      const link = window.document.createElement('a');
+      link.href = url;
+      // Nombre de archivo de respaldo usando title si no hay nombre original disponible
+      link.download = (document.title && /\.[a-zA-Z0-9]+$/.test(document.title)) ? document.title : `${document.title || 'documento'}.pdf`;
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      // Silenciar error en UI por ahora; se puede mejorar con toast
+      // console.error('Error al descargar documento:', error);
+    }
+  };
 
   return (
     <div className="my-documents-container">
       <div className="documents-header">
         <div className="header-content">
-          <button className="action-button secondary" onClick={onBack} style={{ marginBottom: 8 }}>
-            ← Volver
-          </button>
+          {!hideBackButton && (
+            <button className="action-button secondary" onClick={onBack} style={{ marginBottom: 8 }}>
+              ← Volver
+            </button>
+          )}
           <h2>📁 Documentos de {student}</h2>
           <p>Revisa, comenta, aprueba o rechaza por cada entrega</p>
         </div>
@@ -73,17 +103,60 @@ const StudentPendingDetail: React.FC<Props> = ({ studentId, student, onBack }) =
         </div>
       </div>
 
-      <div className="documents-list">
+      {/* Búsqueda y filtros para esta lista del estudiante */}
+      <div className="search-filter-section">
+        <div className="search-box">
+          <span className="search-icon">🔍</span>
+          <input
+            type="text"
+            placeholder="Buscar por nombre de archivo..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            autoComplete="off"
+          />
+        </div>
+
+        <div className="filters-row">
+          <div className="filter-group">
+            <label>Fase:</label>
+            <select
+              value={phaseFilter}
+              onChange={(e) => setPhaseFilter(e.target.value as any)}
+            >
+              <option value="all">Todas las fases</option>
+              {phaseOptions.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Estado:</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as AdvisorDocument['status'] | 'all')}
+            >
+              <option value="all">Todos los estados</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="en_revision">En Revisión</option>
+              <option value="aprobado">Aprobado</option>
+              <option value="rechazado">Rechazado</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+  <div className="documents-list">
         {loading ? (
           <div className="loading-container"><div className="spinner"></div><p>Cargando...</p></div>
-        ) : docs.length === 0 ? (
+        ) : filteredDocs.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">📭</div>
             <h3>Sin pendientes</h3>
-            <p>Este estudiante no tiene documentos por revisar</p>
+            <p>{searchTerm || phaseFilter !== 'all' || statusFilter !== 'all' ? 'No se encontraron documentos con los filtros aplicados' : 'Este estudiante no tiene documentos por revisar'}</p>
           </div>
         ) : (
-          docs.map((document) => (
+          filteredDocs.map((document) => (
             <div key={document.id} className="document-card">
               <div className="document-info">
                 <div className="document-header">
@@ -119,20 +192,13 @@ const StudentPendingDetail: React.FC<Props> = ({ studentId, student, onBack }) =
               </div>
 
               <div className="document-actions">
-                <button 
-                  className="action-button secondary"
-                  onClick={() => { setSelected(document); setComment(document.comentarios || ''); }}
-                >
-                  <span className="button-icon">💬</span>
-                  Comentar
+                <button className="action-button primary" onClick={() => navigate(`/advisor/documents/${document.id}?studentId=${studentId || ''}&student=${encodeURIComponent(student)}`)}>
+                  <span className="button-icon">👁️</span>
+                  Ver Detalles
                 </button>
-                <button className="action-button primary" onClick={() => handleApprove(document)}>
-                  <span className="button-icon">✅</span>
-                  Aprobar
-                </button>
-                <button className="action-button danger" onClick={() => handleReject(document)}>
-                  <span className="button-icon">❌</span>
-                  Rechazar
+                <button className="action-button secondary" onClick={() => handleDownload(document)}>
+                  <span className="button-icon">📥</span>
+                  Descargar
                 </button>
               </div>
             </div>
@@ -140,25 +206,7 @@ const StudentPendingDetail: React.FC<Props> = ({ studentId, student, onBack }) =
         )}
       </div>
 
-      {selected && (
-        <div className="document-card" style={{ border: '1px solid #1976d266' }}>
-          <h3>💬 Agregar/Editar comentario</h3>
-          <div style={{ margin: '8px 0' }}><strong>{selected.title}</strong></div>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            rows={4}
-            style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #ddd' }}
-            placeholder="Escribe tu comentario..."
-          />
-          <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-            <button className="action-button primary" onClick={handleSaveComment} disabled={saving}>
-              {saving ? 'Guardando...' : 'Guardar comentario'}
-            </button>
-            <button className="action-button" onClick={() => { setSelected(null); setComment(''); }}>Cancelar</button>
-          </div>
-        </div>
-      )}
+      {/* Los comentarios y acciones se gestionan en la vista de detalle */}
 
       <style>{myDocumentsStyles}</style>
     </div>

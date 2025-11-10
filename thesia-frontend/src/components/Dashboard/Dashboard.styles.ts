@@ -16,17 +16,18 @@ export const dashboardStyles = `
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     position: relative;
     overflow-x: hidden;
-    padding-left: 280px; /* Ajustado para evitar superposición con el sidebar */
+    background: #f5f5f5; /* Fondo consistente */
   }
 
+  /* Unificamos el layout con el resto de vistas: usamos margin-left en lugar de padding en el contenedor */
   .main-content {
     flex: 1;
-    background: #f5f5f5;
     min-height: 100vh;
     position: relative;
-    width: 100%;
+    margin-left: 280px; /* Alineado con el ancho del Sidebar */
+    padding-bottom: 32px; /* Espacio inferior para evitar corte */
     overflow-x: hidden;
-    transition: padding-left 0.3s ease; /* Transición suave para cambios de tamaño */
+    transition: margin-left 0.3s ease; /* Transición suave cuando cambia el ancho del sidebar */
   }
 
   /* === HEADER === */
@@ -610,23 +611,13 @@ export const dashboardStyles = `
 
   /* === RESPONSIVE === */
   @media (max-width: 1024px) {
-    .dashboard-container {
-      padding-left: 240px; /* Ajustado para pantallas medianas */
-    }
-
     .main-content {
-      margin-left: 240px; /* Ajustado para pantallas medianas */
-      width: calc(100vw - 240px);
+      margin-left: 240px; /* Sidebar más estrecho en pantallas medianas */
     }
 
     .dashboard-grid {
       gap: 24px;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    .dashboard-grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr; /* Colapsa a una sola columna */
     }
 
     .stats-grid {
@@ -635,12 +626,8 @@ export const dashboardStyles = `
   }
 
   @media (max-width: 768px) {
-    .dashboard-container {
-      padding-left: 0; /* Ajustado para pantallas pequeñas */
-    }
-
     .main-content {
-      margin-left: 0; /* Ajustado para pantallas pequeñas */
+      margin-left: 0; /* Sin sidebar fijo visible */
       width: 100vw;
     }
 

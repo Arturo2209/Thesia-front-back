@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import documentsService from '../../../services/documentsService';
 import type { DocumentDetail as DocumentDetailType, Comment } from '../types/documents.types';
 import { documentDetailStyles } from '../styles/DocumentDetail.styles';
@@ -7,12 +8,14 @@ interface DocumentDetailProps {
   documentId: number;
   onBack: () => void;
   onRefresh: () => void;
+  onResubmit?: (documentId: number, phase: string) => void;
 }
 
 const DocumentDetail: React.FC<DocumentDetailProps> = ({ 
   documentId, 
   onBack, 
-  onRefresh 
+  onRefresh,
+  onResubmit
 }) => {
   const [document, setDocument] = useState<DocumentDetailType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,6 +24,8 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
   // Estados para acciones
   const [downloading, setDownloading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [resubmitting] = useState(false); // mantenido para consistencia de UI en buttons (no se usa)
+  const [, setSearchParams] = useSearchParams(); // fallback si no llega onResubmit
 
   // Cargar detalles del documento
   const loadDocumentDetail = async () => {
@@ -54,7 +59,7 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
 
   // Obtener color del estado
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'aprobado': return 'green';
       case 'en_revision': return 'yellow';
       case 'rechazado': return 'red';
@@ -65,7 +70,7 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
 
   // Obtener texto del estado
   const getStatusText = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'aprobado': return 'Aprobado';
       case 'en_revision': return 'En Revisión';
       case 'rechazado': return 'Rechazado';
@@ -73,6 +78,9 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
       default: return status;
     }
   };
+  
+  // Normalizar estado para comparaciones (el backend envía "Pendiente" capitalizado)
+  const isPending = (status: string) => status?.toLowerCase() === 'pendiente';
 
   // Obtener texto de la fase
   const getPhaseText = (phase: string) => {
@@ -121,7 +129,7 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
     if (!document) return;
     
     // Verificar que solo se pueda eliminar documentos pendientes
-    if (document.status !== 'pendiente') {
+    if (!isPending(document.status)) {
       alert('Solo se pueden eliminar documentos con estado "Pendiente".');
       return;
     }
@@ -158,6 +166,17 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
       alert('Error de conexión al eliminar el documento. Inténtalo de nuevo.');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  // 🔄 Resubir documento (pendiente o rechazado)
+  const handleResubmitClick = () => {
+    if (!document) return;
+    // Navegación controlada por el padre si existe
+    if (onResubmit) {
+      onResubmit(document.id, document.phase);
+    } else {
+      setSearchParams({ tab: 'upload', resubmit: String(document.id), phase: document.phase });
     }
   };
 
@@ -224,7 +243,7 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
             </button>
             
             {/* ✅ BOTÓN ELIMINAR - SOLO PARA DOCUMENTOS PENDIENTES */}
-            {document.status === 'pendiente' && (
+            {isPending(document.status) && (
               <button 
                 className="action-button danger"
                 onClick={handleDelete}
@@ -244,6 +263,21 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
                 )}
               </button>
             )}
+
+            {/* 🔄 Volver a enviar - solo para documentos pendientes */}
+            {isPending(document.status) && (
+              <button
+                className="action-button primary"
+                onClick={handleResubmitClick}
+                disabled={resubmitting}
+                title="Subir una nueva versión y reemplazar la actual"
+              >
+                <>
+                  <span className="button-icon">🔄</span>
+                  Volver a Enviar
+                </>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -256,7 +290,7 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
             <div className="title-content">
               <h1>{document.originalFileName}</h1>
               <div className="subtitle">
-                {getPhaseText(document.phase)} • Capítulo {document.chapterNumber}
+                {getPhaseText(document.phase)}
               </div>
             </div>
           </div>
@@ -292,7 +326,7 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
               <span className="metadata-label">Estado:</span>
               <span className="metadata-value">
                 {getStatusText(document.status)}
-                {document.status === 'pendiente' && ' (Puedes eliminar este documento)'}
+                {isPending(document.status)}
               </span>
             </div>
             {document.lastModified && (
@@ -395,7 +429,10 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
               </p>
             </div>
           </div>
-          <button className="action-button primary large">
+          <button 
+            className="action-button primary large"
+            onClick={handleResubmitClick}
+          >
             <span className="button-icon">🔄</span>
             Subir Nueva Versión
           </button>
@@ -418,7 +455,7 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
       )}
 
       {/* ✅ MENSAJE INFORMATIVO PARA DOCUMENTOS PENDIENTES */}
-      {document.status === 'pendiente' && (
+      {isPending(document.status) && (
         <div className="status-actions">
           <div className="status-message pending">
             <div className="status-icon">⏳</div>
@@ -434,6 +471,7 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
       )}
 
       <style>{documentDetailStyles}</style>
+      {/* Eliminado: resubmission directo con file input. Ahora se navega a vista estándar. */}
     </div>
   );
 };

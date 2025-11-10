@@ -21,7 +21,7 @@ export const miAsesorStyles = `
   .main-content {
     flex: 1;
     margin-left: 280px;
-    background: #f5f5f5;
+    background: #ffffff; /* Fondo blanco para unificar con Dashboard */
     min-height: 100vh;
     position: relative;
     width: calc(100% - 280px);
@@ -396,6 +396,7 @@ export const miAsesorStyles = `
     .main-content {
       margin-left: 240px;
       width: calc(100vw - 240px);
+      background: #ffffff; /* Mantener blanco también en pantallas medianas */
     }
 
     .content-grid {

@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import http from 'http';
 
 // Importar configuración de base de datos
 import sequelize, { testConnection, verifyDatabase } from './config/database';
@@ -22,11 +23,13 @@ import guiasRouter from './routes/guias';
 import notificationsRouter from './routes/notifications';
 import reunionesRouter from './routes/reuniones';
 import advisorRouter from './routes/advisor'; // NUEVA IMPORTACIÓN
+import chatRouter from './routes/chat'; // 🆕 CHAT ROUTER
+import { initSocket } from './config/socket';
 
 // Cargar variables de entorno
 dotenv.config();
-
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3001;
 
 console.log('🚀 Iniciando servidor THESIA desde server.ts CON RUTAS CORREGIDAS Y DOCUMENTOS...');
@@ -59,6 +62,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/reuniones', reunionesRouter);  // ✅ NUEVA RUTA DE REUNIONES
 app.use('/api/advisor', advisorRouter); // NUEVA RUTA PARA DOCUMENTOS DE ASESOR
+app.use('/api/chat', chatRouter); // 🆕 REGISTRAR CHAT
 // 🚨 COMENTAR LAS RUTAS VIEJAS:
 // app.use('/api', apiRoutes);
 
@@ -67,6 +71,7 @@ console.log('   /api/advisors/*');
 console.log('   /api/thesis/* ← RUTAS CORREGIDAS CON JOIN Y DEBUG');
 console.log('   /api/documents/* ← NUEVAS RUTAS DE DOCUMENTOS'); // ✅ NUEVA LÍNEA
 console.log('   /api/auth/*');
+console.log('   /api/chat/* ← RUTAS DE CHAT');
 console.log('   🚨 /api/* DESHABILITADO - RUTAS VIEJAS');
 
 // Registrar rutas de la API
@@ -218,8 +223,11 @@ const startServer = async () => {
       await verifyDatabase();
     }
 
-    // Iniciar servidor
-    app.listen(PORT, () => {
+    // Iniciar servidor HTTP + Socket.io
+    const origin = process.env.FRONTEND_URL || 'http://localhost:5173';
+    initSocket(server, origin);
+
+    server.listen(PORT, () => {
       console.log('✅ Servidor iniciado correctamente CON RUTAS CORREGIDAS Y DOCUMENTOS');
       console.log(`🌐 Ejecutándose en http://localhost:${PORT}`);
       console.log('');
@@ -248,7 +256,7 @@ const startServer = async () => {
     console.error('❌ Error iniciando servidor:', error);
     
     // Iniciar servidor de todos modos para debugging
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`⚠️ Servidor iniciado en modo de emergencia en puerto ${PORT}`);
     });
   }

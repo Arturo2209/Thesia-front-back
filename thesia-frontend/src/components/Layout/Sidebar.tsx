@@ -46,7 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
     // 🔧 CORREGIDO: Ahora puede acceder a codigo_estudiante
     const profileIncomplete = !user?.carrera || !user?.codigo_estudiante;
     
-    const restrictedRoutes = ['/mis-documentos', '/mi-asesor', '/notificaciones'];
+  const restrictedRoutes = ['/mis-documentos', '/mi-asesor', '/notificaciones', '/mi-tesis'];
     
     if (profileIncomplete && restrictedRoutes.includes(path)) {
       console.log('🚫 Perfil incompleto - Redirigiendo a completar perfil');
@@ -61,7 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
   const getNavItemClass = (path: string) => {
     const user = authService.getStoredUser();
     const profileIncomplete = !user?.carrera || !user?.codigo_estudiante;
-    const restrictedRoutes = ['/mis-documentos', '/mi-asesor', '/notificaciones'];
+  const restrictedRoutes = ['/mis-documentos', '/mi-asesor', '/notificaciones', '/mi-tesis'];
     
     const isRestricted = profileIncomplete && restrictedRoutes.includes(path);
     const isCurrentPath = location.pathname === path;
@@ -93,29 +93,22 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
       {/* 🧭 NAVEGACIÓN */}
       <nav className="sidebar-nav">
         <div className={getActiveClass('/dashboard')} onClick={() => handleNavigation('/dashboard')}>
-          <span className="nav-icon">🏠</span>
           <span className="nav-text">Inicio</span>
         </div>
         
-        <div className={getActiveClass('/mi-tesis')} onClick={() => handleNavigation('/mi-tesis')}>
-          <span className="nav-icon">📝</span>
+        <div className={getNavItemClass('/mi-tesis')} onClick={() => handleNavigation('/mi-tesis')}>
           <span className="nav-text">Mi Tesis</span>
         </div>
         
         <div className={getNavItemClass('/mis-documentos')} onClick={() => handleNavigation('/mis-documentos')}>
-          <span className="nav-icon">📄</span>
           <span className="nav-text">Documentos</span>
         </div>
         
         <div className={getNavItemClass('/mi-asesor')} onClick={() => handleNavigation('/mi-asesor')}>
-          <span className="nav-icon">👨‍🏫</span>
           <span className="nav-text">Mi Asesor</span>
         </div>
         
-        
-        
         <div className={getNavItemClass('/notificaciones')} onClick={() => handleNavigation('/notificaciones')}>
-          <span className="nav-icon">🔔</span>
           <span className="nav-text">Notificaciones</span>
         </div>
       </nav>
@@ -145,7 +138,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
           onClick={onLogout}
           className="logout-btn"
         >
-          <span className="nav-icon">↗</span>
           <span className="nav-text">Cerrar Sesión</span>
         </button>
       </div>
@@ -232,10 +224,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
         }
 
         .nav-item.restricted::after {
-          content: '🔒';
-          position: absolute;
-          right: 20px;
-          font-size: 14px;
+          content: '';
         }
 
         .nav-item.restricted:hover {
@@ -325,11 +314,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
           transform: translateY(-2px);
         }
 
-        .main-content {
-          margin-left: 280px; /* Ajustado para que el contenido principal no se superponga */
-          padding: 20px;
-          overflow-y: auto;
-        }
+        /* Nota: Las vistas son responsables de manejar el margen izquierdo de su .main-content
+           para evitar conflictos y dobles offsets. Por eso no se define aquí. */
 
         @media (max-width: 1024px) {
           .sidebar {
@@ -354,9 +340,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
             width: 90px;
           }
 
-          .main-content {
-            margin-left: 0;
-          }
+          /* El comportamiento responsivo de .main-content se maneja en cada vista */
         }
       `}</style>
     </div>

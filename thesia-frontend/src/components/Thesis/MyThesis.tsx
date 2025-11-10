@@ -33,7 +33,7 @@ const MyThesis: React.FC = () => {
   const [error, setError] = useState('');
   
   // Estados de asesores
-  const [advisors, setAdvisors] = useState<Advisor[]>([]);
+  // Lista completa de asesores no es necesaria en estado; usamos directamente la lista filtrada
   const [advisorsLoading, setAdvisorsLoading] = useState(false);
   const [filteredAdvisors, setFilteredAdvisors] = useState<Advisor[]>([]);
   const [selectedAdvisor, setSelectedAdvisor] = useState<number | null>(null);
@@ -213,43 +213,35 @@ const MyThesis: React.FC = () => {
       if (advisorsData.advisors && advisorsData.advisors.length > 0) {
         console.log('✅ Asesores recibidos:', advisorsData.advisors.length);
         
-        // 🔧 CORRECCIÓN: Acceder a las propiedades correctas del backend
-        console.log('Primer asesor (raw del backend):', {
-          ...advisorsData.advisors[0]
-        });
-        
-        // 🔧 MAPEAR ASESORES AL FORMATO CORRECTO - USANDO PROPIEDADES CORRECTAS
-        const mappedAdvisors: Advisor[] = advisorsData.advisors.map((advisor: any) => {
-          const fullName = advisor.name || '';
-          const nameParts = fullName.split(' ');
-          const nombre = nameParts.slice(0, 2).join(' ') || 'Sin nombre';
-          const apellido = nameParts.slice(2).join(' ') || '';
-          
-          return {
-            id_usuario: advisor.id, // ✅ CORRECTO: advisor.id del backend
-            nombre: nombre,
-            apellido: apellido,
-            correo_institucional: advisor.email || '',
-            especialidad: advisor.specialty || 'Sin especialidad', // ✅ CORRECTO: advisor.specialty del backend
-            avatar_url: advisor.avatar_url,
-            current_students: 0,
-            max_capacity: 5,
-            available_capacity: 5
-          };
-        });
+        // 🔧 Usar directamente los campos que entrega el backend (/advisors)
+        // Backend fields: id_usuario, nombre, apellido, correo_institucional, especialidad,
+        // avatar_url, current_students, max_capacity, available_capacity
+        console.log('Primer asesor (raw del backend):', advisorsData.advisors[0]);
+
+        const mappedAdvisors: Advisor[] = advisorsData.advisors.map((advisor: any) => ({
+          id_usuario: Number(advisor.id_usuario),
+          nombre: advisor.nombre || 'Sin nombre',
+          apellido: advisor.apellido || '',
+          correo_institucional: advisor.correo_institucional || '',
+          especialidad: advisor.especialidad || 'Sin especialidad',
+          avatar_url: advisor.avatar_url,
+          current_students: Number(advisor.current_students ?? 0),
+          max_capacity: Number(advisor.max_capacity ?? 5),
+          available_capacity: Number(advisor.available_capacity ?? Math.max(0, (advisor.max_capacity ?? 5) - (advisor.current_students ?? 0)))
+        }));
 
         console.log('✅ Primer asesor mapeado correctamente:', {
           id_usuario: mappedAdvisors[0]?.id_usuario,
           nombre: mappedAdvisors[0]?.nombre,
           apellido: mappedAdvisors[0]?.apellido,
           especialidad: mappedAdvisors[0]?.especialidad,
-          correo: mappedAdvisors[0]?.correo_institucional
+          correo: mappedAdvisors[0]?.correo_institucional,
+          capacidad: `${mappedAdvisors[0]?.available_capacity}/${mappedAdvisors[0]?.max_capacity}`,
+          asignados: mappedAdvisors[0]?.current_students
         });
         
         console.log('✅ Especialidades disponibles:', 
           [...new Set(mappedAdvisors.map(a => a.especialidad))]);
-        
-        setAdvisors(mappedAdvisors);
         
         // 🔧 FILTRAR POR CARRERA DEL USUARIO
         if (userToUse?.carrera) {

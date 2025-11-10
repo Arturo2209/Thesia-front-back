@@ -454,10 +454,14 @@ router.get('/:id',
     });
 
     // 🔧 PASO 2: Verificar permisos buscando la tesis por separado
+    //    Permitir acceso si el usuario es el ESTUDIANTE dueño de la tesis o el ASESOR asignado
     const tesis = await Tesis.findOne({
-      where: { 
+      where: {
         id_tesis: documento.id_tesis,
-        id_usuario_estudiante: userId 
+        [Op.or]: [
+          { id_usuario_estudiante: userId },
+          { id_asesor: userId }
+        ]
       }
     });
 
@@ -754,8 +758,8 @@ router.delete('/:id',
       });
     }
 
-    // ✅ VALIDACIÓN MEJORADA: Solo permitir eliminar documentos pendientes
-    if (documento.estado !== 'pendiente') {
+    // ✅ VALIDACIÓN MEJORADA: Solo permitir eliminar documentos pendientes (case-insensitive)
+    if ((documento.estado || '').toLowerCase() !== 'pendiente') {
       return res.status(400).json({
         success: false,
         message: 'Solo se pueden eliminar documentos con estado "Pendiente"',
@@ -790,13 +794,12 @@ router.delete('/:id',
   }
 });
 
-// POST /api/documents/:id/resubmit - Resubir nueva versión de documento rechazado (sin cambios)
+// POST /api/documents/:id/resubmit - Resubir nueva versión de un documento (rechazado o pendiente)
 router.post('/:id/resubmit',
   authenticateToken,
   [
     param('id').isInt({ min: 1 }).withMessage('ID de documento inválido'),
-    body('description').optional().isString().isLength({ max: 255 }).withMessage('Descripción demasiado larga'),
-    body('chapterNumber').optional().isInt({ min: 1, max: 50 }).withMessage('El número de capítulo debe ser un entero entre 1 y 50')
+    body('description').optional().isString().isLength({ max: 255 }).withMessage('Descripción demasiado larga')
   ],
   upload.single('file'),
   async (req: Request, res: Response) => {
@@ -882,7 +885,6 @@ router.post('/:id/resubmit',
       fileSizeDisplay: formatFileSize(req.file.size),
       fileSize: req.file.size,
       fileType: documento.formato_archivo.toUpperCase(),
-      chapterNumber: 1,
       description: description || null
     };
 

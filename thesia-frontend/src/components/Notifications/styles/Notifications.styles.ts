@@ -23,7 +23,7 @@ html, body {
 .notifications-container .main-content {
   flex: 1;
   margin-left: 280px;
-  background: #f5f5f5;
+  background: #ffffff; /* Fondo blanco para igualar al Dashboard */
   min-height: 100vh;
   width: calc(100% - 280px);
   position: relative;

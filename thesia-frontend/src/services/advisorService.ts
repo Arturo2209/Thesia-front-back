@@ -208,27 +208,42 @@ export const advisorService = {
    * 📚 Obtener estudiantes asignados al asesor
    */
   async getAssignedStudents(): Promise<AdvisorStudent[]> {
+    console.log('🔄 [AdvisorService] Obteniendo estudiantes asignados...');
+
+    // Función de mapeo común (acepta varias formas del backend)
+    const mapRows = (rows: any[]): AdvisorStudent[] => rows.map((row: any) => ({
+      id: Number(row.id ?? row.student_id ?? row.id_usuario_estudiante),
+      name: row.name || [row.student_name, row.student_lastname].filter(Boolean).join(' ') || 'Sin nombre',
+      email: row.email || row.student_email || 'Sin correo',
+      specialty: row.specialty || row.especialidad || 'Sin especialidad',
+      thesisTitle: row.thesisTitle || row.thesis_title || 'Sin título',
+      phase: row.phase || row.phaseRaw || row.thesisPhaseActual || 'Sin fase',
+      assignedDate: row.assignedDate || row.assigned_date || null,
+    }));
+
+    // 1) Intento principal: nueva ruta
     try {
-      console.log('🔄 [AdvisorService] Obteniendo estudiantes asignados...');
+      const resNew = (await apiService.get('/advisors/assigned-students')) as any;
+      console.log('✅ [AdvisorService] Respuesta nueva ruta:', resNew);
+      const rowsNew = Array.isArray(resNew?.students) ? resNew.students : Array.isArray(resNew?.data) ? resNew.data : [];
+      const mappedNew = mapRows(rowsNew);
+      if (mappedNew.length > 0) return mappedNew;
+      console.warn('⚠️ [AdvisorService] Nueva ruta devolvió 0 estudiantes. Probando ruta legacy...');
+    } catch (e) {
+      console.warn('⚠️ [AdvisorService] Falla en nueva ruta, probaré legacy:', e);
+    }
 
-      const response = (await apiService.get('/advisor/students')) as unknown as GetAssignedStudentsResponse;
-      console.log('✅ [AdvisorService] Respuesta del backend:', response);
-
-      const mappedStudents = response.students.map((student) => ({
-        id: student.id,
-        name: student.name || 'Sin nombre',
-        email: student.email || 'Sin correo',
-        specialty: student.specialty || 'Sin especialidad',
-        thesisTitle: student.thesisTitle || 'Sin título',
-        phase: student.phase || 'Sin fase',
-        assignedDate: student.assignedDate || 'Sin fecha',
-      }));
-
-      console.log('✅ [AdvisorService] Estudiantes mapeados:', mappedStudents);
-      return mappedStudents;
-    } catch (error) {
-      console.error('❌ [AdvisorService] Error obteniendo estudiantes asignados:', error);
-      return [];
+    // 2) Fallback: ruta legacy aún registrada bajo /api
+    try {
+      const resLegacy = (await apiService.get('/advisor/students')) as any;
+      console.log('✅ [AdvisorService] Respuesta ruta legacy:', resLegacy);
+      const rowsLegacy = Array.isArray(resLegacy?.students) ? resLegacy.students : Array.isArray(resLegacy?.data) ? resLegacy.data : [];
+      const mappedLegacy = mapRows(rowsLegacy);
+      return mappedLegacy;
+    } catch (e2) {
+      console.error('❌ [AdvisorService] Ambas rutas fallaron al obtener estudiantes:', e2);
+      // Propagar el error para que la UI pueda mostrar mensaje y no silencie con lista vacía
+      throw e2;
     }
   },
 
@@ -264,20 +279,7 @@ export default advisorService;
 /**
  * Interfaz para la respuesta de obtener estudiantes asignados
  */
-interface GetAssignedStudentsResponse {
-  success: boolean;
-  students: Array<{
-    id: number;
-    name: string;
-    email: string;
-    specialty: string;
-    thesisTitle?: string;
-    phase?: string;
-    assignedDate?: string;
-  }>;
-  total: number;
-  timestamp: string;
-}
+// (Legacy) GetAssignedStudentsResponse removido: se usa respuesta dinámica enriquecida
 
 interface GetPendingDocumentsResponse {
   success: boolean;

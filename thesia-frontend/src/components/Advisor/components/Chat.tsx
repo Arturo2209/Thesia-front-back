@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { KeyboardEvent } from 'react';
 import { authService } from '../../../services/authService';
+import chatService from '../../../services/chatService';
 import { chatStyles } from '../styles/Chat.styles';
 import type { Advisor } from '../types/advisor.types';
+import { io, type Socket } from 'socket.io-client';
 
 // 📋 TIPOS LOCALES
 interface Message {
@@ -44,40 +46,7 @@ interface CurrentUser {
   picture?: string;
 }
 
-// 🗄️ FUNCIONES PARA LOCALSTORAGE
-const CHAT_STORAGE_KEY = 'thesia_chat_messages';
-
-const saveChatMessages = (conversationId: string, messages: Message[]) => {
-  try {
-    const allChats = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || '{}');
-    allChats[conversationId] = {
-      messages: messages,
-      lastUpdated: new Date().toISOString()
-    };
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(allChats));
-    console.log('💾 Mensajes guardados en localStorage para conversación:', conversationId);
-  } catch (error) {
-    console.error('❌ Error guardando mensajes en localStorage:', error);
-  }
-};
-
-const loadChatMessages = (conversationId: string): Message[] => {
-  try {
-    const allChats = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || '{}');
-    const chatData = allChats[conversationId];
-    
-    if (chatData && chatData.messages) {
-      console.log('📂 Mensajes cargados desde localStorage:', chatData.messages.length);
-      return chatData.messages;
-    }
-    
-    console.log('📂 No hay mensajes previos para esta conversación');
-    return [];
-  } catch (error) {
-    console.error('❌ Error cargando mensajes desde localStorage:', error);
-    return [];
-  }
-};
+// (Se removió el almacenamiento en localStorage para mantener el chat limpio y en tiempo real)
 
 const Chat: React.FC<ChatProps> = ({ advisor }) => {
   const [chatState, setChatState] = useState<ChatState>({
@@ -91,10 +60,11 @@ const Chat: React.FC<ChatProps> = ({ advisor }) => {
 
   const [message, setMessage] = useState('');
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
-  const [uploadingFile, setUploadingFile] = useState(false);
+  // const [uploadingFile, setUploadingFile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const socketRef = useRef<Socket | null>(null);
 
   // 🔄 Cargar usuario actual
   useEffect(() => {
@@ -148,78 +118,140 @@ const Chat: React.FC<ChatProps> = ({ advisor }) => {
     loadCurrentUser();
   }, []);
 
-  // 🎯 Generar ID de conversación y cargar mensajes
+  // 🎯 Generar ID de conversación normalizada (independiente del rol)
+  // Para que asesor y estudiante compartan el mismo identificador local de la conversación,
+  // ordenamos los IDs y usamos el formato menor-mayor. Esto evita tener "A-B" para un rol y "B-A" para el otro.
   useEffect(() => {
     if (currentUser && advisor.id) {
-      const conversationId = `${currentUser.id}-${advisor.id}`;
-      setChatState(prev => ({ ...prev, conversationId }));
-      loadMessages(conversationId);
+      const sortedIds = [currentUser.id, advisor.id].sort((a, b) => a - b);
+      const normalizedId = `${sortedIds[0]}-${sortedIds[1]}`;
+      setChatState(prev => ({ ...prev, conversationId: normalizedId }));
+      console.log('💬 [Chat] Montando conversación normalizada:', normalizedId);
+      loadMessages(normalizedId);
+      // Segundo fetch rápido para capturar mensajes que entren justo antes del montaje
+      setTimeout(() => {
+        console.log('🔄 [Chat] Refresco post-montaje de la conversación:', normalizedId);
+        loadMessages(normalizedId);
+      }, 1500);
+
+      // 🔌 Conectar Socket.IO y unirse a la sala de la conversación
+      if (!socketRef.current) {
+        const token = localStorage.getItem('token');
+        socketRef.current = io('http://localhost:3001', {
+          auth: { token },
+          transports: ['websocket']
+        });
+
+        socketRef.current.on('connect', () => {
+          console.log('🔌 [Chat] Socket conectado (frontend):', socketRef.current?.id, 'userId:', currentUser.id, 'peerId:', advisor.id);
+          socketRef.current?.emit('join', advisor.id); // Unirse con el peer (asesor o estudiante)
+        });
+
+        socketRef.current.on('chat:new_message', (payload: any) => {
+          console.log('📩 [Chat] Evento chat:new_message recibido:', payload?.message?.id_mensaje, 'room:', payload?.room, 'sender:', payload?.senderId);
+          try {
+            const m = payload?.message;
+            if (!m) return;
+            const isOwn = currentUser && m.id_remitente === currentUser.id;
+            const newMsg: Message = {
+              id_message: m.id_mensaje,
+              sender_id: m.id_remitente,
+              receiver_id: isOwn ? advisor.id : (currentUser?.id || 0),
+              message_text: m.contenido,
+              message_type: 'text',
+              is_read: true,
+              conversation_id: normalizedId,
+              created_at: m.fecha_envio,
+              updated_at: m.fecha_envio,
+              sender_name: `${m.nombre || ''} ${m.apellido || ''}`.trim(),
+              sender_avatar: m.avatar_url || undefined,
+              is_own_message: !!isOwn
+            };
+            // Evitar duplicados por ID
+            setChatState(prev => {
+              if (prev.messages.some(x => x.id_message === newMsg.id_message)) {
+                console.log('🔁 [Chat] Mensaje duplicado ignorado:', newMsg.id_message);
+                return prev;
+              }
+              console.log('➕ [Chat] Añadiendo mensaje nuevo (socket):', newMsg.id_message);
+              return { ...prev, messages: [...prev.messages, newMsg] };
+            });
+            scrollToBottom();
+          } catch {}
+        });
+
+        socketRef.current.on('disconnect', () => {
+          console.log('🔌 Socket desconectado');
+        });
+      }
     }
   }, [currentUser, advisor.id]);
 
-  // 💾 Guardar mensajes automáticamente cuando cambien
+  // 🔁 Polling para nuevos mensajes
   useEffect(() => {
-    if (chatState.conversationId && chatState.messages.length > 0 && !chatState.loading) {
-      // Filtrar mensajes temporales (sending: true) antes de guardar
-      const permanentMessages = chatState.messages.filter(msg => !msg.sending);
-      if (permanentMessages.length > 0) {
-        saveChatMessages(chatState.conversationId, permanentMessages);
+    if (!chatState.conversationId) return;
+    // Mantener un resync cada 60s por si algún evento se pierde
+    const interval = setInterval(() => {
+      if (!chatState.loading && !chatState.sending) {
+        loadMessages(chatState.conversationId);
       }
-    }
-  }, [chatState.messages, chatState.conversationId, chatState.loading]);
+    }, 60000);
+    return () => {
+      clearInterval(interval);
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatState.conversationId]);
 
-  // 📜 Cargar mensajes (localStorage + simulados si es primera vez)
+  // (Se removió el guardado automático en localStorage)
+
+  // 📜 Cargar mensajes desde el backend
   const loadMessages = async (conversationId: string) => {
     try {
       setChatState(prev => ({ ...prev, loading: true, error: null }));
-      
       console.log('🔄 Cargando mensajes para conversación:', conversationId);
-      
-      // 📂 INTENTAR CARGAR DESDE LOCALSTORAGE PRIMERO
-      const savedMessages = loadChatMessages(conversationId);
-      
-      if (savedMessages.length > 0) {
-        console.log('📂 Usando mensajes guardados desde localStorage');
-        setChatState(prev => ({
-          ...prev,
-          messages: savedMessages,
-          hasMore: false,
-          loading: false
-        }));
-        scrollToBottom();
-        return;
+
+      // Construir endpoint según rol actual
+      const storedUser = authService.getStoredUser();
+      const isAdvisor = storedUser?.role === 'asesor';
+  // Si el usuario actual es asesor, necesitamos el ID del estudiante (advisor.id representa al peer adaptado)
+  // Si es estudiante, no enviamos query param porque el backend infiere su asesor.
+  const endpointSuffix = isAdvisor ? `?studentId=${advisor.id}` : '';
+
+      const resp = await chatService.getMessages(endpointSuffix);
+
+      if (!resp?.success) {
+        throw new Error(resp?.message || 'No se pudieron cargar los mensajes');
       }
-      
-      console.log('🆕 Primera vez en esta conversación, creando mensajes iniciales...');
-      
-      // 🎭 MENSAJES SIMULADOS SOLO SI NO HAY MENSAJES PREVIOS
-      const simulatedMessages: Message[] = [
-        {
-          id_message: 1,
-          sender_id: advisor.id,
-          receiver_id: currentUser?.id || 0,
-          message_text: '¡Hola! Bienvenido a nuestro chat. ¿En qué puedo ayudarte con tu tesis?',
-          message_type: 'text',
+
+      const mapped: Message[] = (resp.messages || []).map((m: any) => {
+        const isOwn = m.id_remitente === storedUser?.id;
+        return {
+          id_message: m.id_mensaje,
+          sender_id: m.id_remitente,
+          receiver_id: isOwn ? advisor.id : (storedUser?.id || 0),
+          message_text: m.contenido,
+          message_type: m.tipo === 'texto' ? 'text' : 'text',
           is_read: true,
           conversation_id: conversationId,
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          updated_at: new Date(Date.now() - 3600000).toISOString(),
-          sender_name: advisor.name,
-          sender_avatar: advisor.avatar_url || undefined,
-          is_own_message: false
-        }
-      ];
-
-      // Simular delay de red
-      await new Promise(resolve => setTimeout(resolve, 1000));
+          created_at: m.fecha_envio,
+          updated_at: m.fecha_envio,
+          sender_name: `${m.nombre || ''} ${m.apellido || ''}`.trim(),
+          sender_avatar: m.avatar_url || undefined,
+          is_own_message: isOwn
+        } as Message;
+      });
 
       setChatState(prev => ({
         ...prev,
-        messages: simulatedMessages,
+        messages: mapped,
         hasMore: false,
         loading: false
       }));
-      
+
       scrollToBottom();
 
     } catch (error) {
@@ -239,68 +271,51 @@ const Chat: React.FC<ChatProps> = ({ advisor }) => {
     try {
       setChatState(prev => ({ ...prev, sending: true, error: null }));
 
-      const tempMessage: Message = {
-        id_message: Date.now(),
-        sender_id: currentUser.id,
+      // Limpiar input inmediatamente
+      setMessage('');
+
+      // Enviar a backend
+  // Determinar destinatario real: si soy asesor, advisor.id es el estudiante; si soy estudiante, advisor.id es el asesor.
+  const recipientId = advisor.id;
+  const resp = await chatService.sendMessage(recipientId, messageText);
+      if (!resp?.success) {
+        throw new Error(resp?.message || 'No se pudo enviar el mensaje');
+      }
+
+      const m = resp.message;
+      const newMsg: Message = {
+        id_message: m.id_mensaje,
+        sender_id: m.id_remitente,
         receiver_id: advisor.id,
-        message_text: messageText,
+        message_text: m.contenido,
         message_type: 'text',
-        is_read: false,
+        is_read: true,
         conversation_id: chatState.conversationId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        sender_name: currentUser.name,
-        sender_avatar: currentUser.picture,
-        is_own_message: true,
-        sending: true
+        created_at: m.fecha_envio,
+        updated_at: m.fecha_envio,
+        sender_name: `${m.nombre || ''} ${m.apellido || ''}`.trim() || currentUser.name,
+        sender_avatar: m.avatar_url || currentUser.picture,
+        is_own_message: true
       };
 
-      setChatState(prev => ({
-        ...prev,
-        messages: [...prev.messages, tempMessage]
-      }));
-
-      setMessage('');
-      scrollToBottom();
-
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // 🔄 Convertir mensaje temporal a permanente
-      const permanentMessage = { ...tempMessage, sending: false };
-      setChatState(prev => ({
-        ...prev,
-        messages: prev.messages.map(msg => 
-          msg.id_message === tempMessage.id_message 
-            ? permanentMessage
-            : msg
-        ),
-        sending: false
-      }));
-
-      // 🤖 Respuesta automática del asesor
-      setTimeout(() => {
-        const responseMessage: Message = {
-          id_message: Date.now() + 1,
-          sender_id: advisor.id,
-          receiver_id: currentUser.id,
-          message_text: 'Gracias por tu mensaje. Lo revisaré y te responderé pronto.',
-          message_type: 'text',
-          is_read: false,
-          conversation_id: chatState.conversationId,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          sender_name: advisor.name,
-          sender_avatar: advisor.avatar_url || undefined,
-          is_own_message: false
-        };
-
-        setChatState(prev => ({
+      setChatState(prev => {
+        // Evitar duplicado si el evento por socket llegó primero
+        if (prev.messages.some(x => x.id_message === m.id_mensaje)) {
+          console.log('🔁 [Chat] Respuesta de envío ya reflejada por socket, evitando duplicado:', m.id_mensaje);
+          return { ...prev, sending: false };
+        }
+        return {
           ...prev,
-          messages: [...prev.messages, responseMessage]
-        }));
+          messages: [...prev.messages, newMsg],
+          sending: false
+        };
+      });
 
-        scrollToBottom();
-      }, 2000);
+      // Refresco corto para asegurar sincronización (puede duplicar pero se deduplica)
+      setTimeout(() => {
+        console.log('🔄 [Chat] Refresco tras envío para sincronizar mensajes remotos');
+        loadMessages(chatState.conversationId);
+      }, 800);
 
     } catch (error) {
       console.error('❌ Error enviando mensaje:', error);
@@ -314,85 +329,17 @@ const Chat: React.FC<ChatProps> = ({ advisor }) => {
 
   // 📎 Manejar carga de archivos
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0 || !currentUser) return;
-
-    const file = files[0];
-    
-    // Validar tamaño (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('❌ El archivo es muy grande. Máximo 10MB permitido.');
-      return;
-    }
-
-    // Validar tipo
-    const allowedTypes = [
-      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'application/pdf', 'application/msword', 
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain'
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      alert('❌ Tipo de archivo no permitido. Solo imágenes, PDF, Word y texto.');
-      return;
-    }
-
-    try {
-      setUploadingFile(true);
-      console.log('📎 Subiendo archivo:', file.name);
-
-      // Simular subida de archivo
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      const fileMessage: Message = {
-        id_message: Date.now(),
-        sender_id: currentUser.id,
-        receiver_id: advisor.id,
-        message_text: `📎 ${file.name}`,
-        message_type: file.type.startsWith('image/') ? 'image' : 'file',
-        file_url: URL.createObjectURL(file), // En producción sería la URL del servidor
-        file_name: file.name,
-        is_read: false,
-        conversation_id: chatState.conversationId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        sender_name: currentUser.name,
-        sender_avatar: currentUser.picture,
-        is_own_message: true
-      };
-
-      setChatState(prev => ({
-        ...prev,
-        messages: [...prev.messages, fileMessage]
-      }));
-
-      scrollToBottom();
-      console.log('✅ Archivo enviado exitosamente');
-
-    } catch (error) {
-      console.error('❌ Error subiendo archivo:', error);
-      alert('❌ Error subiendo el archivo. Intenta nuevamente.');
-    } finally {
-      setUploadingFile(false);
-      event.target.value = ''; // Limpiar input
-    }
+    // Subida de archivos no soportada aún en backend de chat
+    event.target.value = '';
+    alert('Adjuntar archivos aún no está soportado en el chat.');
   };
 
   // 🧹 Limpiar historial de chat (función opcional para debugging)
   const clearChatHistory = () => {
-    if (confirm('¿Estás seguro de que quieres borrar todo el historial del chat?')) {
-      try {
-        const allChats = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || '{}');
-        delete allChats[chatState.conversationId];
-        localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(allChats));
-        
-        setChatState(prev => ({ ...prev, messages: [] }));
+    if (confirm('¿Estás seguro de que quieres refrescar la conversación?')) {
+      setChatState(prev => ({ ...prev, messages: [] }));
+      if (chatState.conversationId) {
         loadMessages(chatState.conversationId);
-        
-        console.log('🧹 Historial del chat eliminado');
-      } catch (error) {
-        console.error('❌ Error limpiando historial:', error);
       }
     }
   };
@@ -633,10 +580,10 @@ const Chat: React.FC<ChatProps> = ({ advisor }) => {
         <button 
           className="chat-attach-btn"
           onClick={() => fileInputRef.current?.click()}
-          disabled={chatState.sending || uploadingFile}
+          disabled={chatState.sending}
           title="Adjuntar archivo (imágenes, PDF, Word, texto)"
         >
-          {uploadingFile ? '⏳' : '📎'}
+          {'📎'}
         </button>
 
         <textarea

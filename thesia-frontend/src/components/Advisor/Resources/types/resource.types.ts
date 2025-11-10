@@ -1,6 +1,14 @@
 export interface AdvisorResource {
   id: number;
-  title: string;
+  fileName: string;
+  description?: string;
+  phase?: string;
+  uploadDate: string;
+  active: boolean;
+}
+
+export interface UploadGuideForm {
+  file: File | null;
   description: string;
-  url: string;
+  phase: string; // 'general' o fase específica
 }
