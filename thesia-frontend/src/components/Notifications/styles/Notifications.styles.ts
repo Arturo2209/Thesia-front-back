@@ -20,25 +20,25 @@ html, body {
 }
 
 /* 🔧 MAIN CONTENT - IGUAL A MI-TESIS */
+/* MAIN CONTENT: sin padding ni width calc para que el header quede pegado */
 .notifications-container .main-content {
   flex: 1;
   margin-left: 280px;
-  background: #ffffff; /* Fondo blanco para igualar al Dashboard */
+  background: #ffffff;
   min-height: 100vh;
-  width: calc(100% - 280px);
   position: relative;
   overflow-x: hidden;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* 📱 HEADER PRINCIPAL - IGUAL A MI-TESIS */
+/* HEADER pegado (sin box-shadow extra si global ya aplica sombra ligera) */
 .notifications-container .main-header {
-  background: white;
+  background: #ffffff;
   padding: 16px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   position: sticky;
   top: 0;
   z-index: 100;

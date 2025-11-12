@@ -126,9 +126,26 @@ const Dashboard: React.FC = () => {
                         <div 
                           className="progress-fill"
                           style={{ width: `${dashboardData.thesis.overallProgress || 0}%` }}
+                          aria-label={`Progreso ${dashboardData.thesis.overallProgress || 0}%`}
                         />
                       </div>
-                      <p className="progress-text">{dashboardData.thesis.overallProgress || 0}%</p>
+                      <p className="progress-text" title={`Fases completadas: ${(dashboardData.thesis.overallProgress||0)/20}/5`}>
+                        {dashboardData.thesis.overallProgress || 0}%
+                      </p>
+                      {dashboardData.meetings?.next && (
+                        <div style={{marginTop:12, padding:12, background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:8}}>
+                          <strong style={{display:'block', marginBottom:4}}>Próxima reunión:</strong>
+                          <span style={{fontSize:13}}>
+                            {new Date(`${dashboardData.meetings.next.date}T${dashboardData.meetings.next.time}:00`).toLocaleDateString('es-ES',{day:'numeric', month:'short'})} • {dashboardData.meetings.next.time} • {dashboardData.meetings.next.modality}
+                          </span>
+                          {dashboardData.meetings.next.location && (
+                            <div style={{fontSize:12,color:'#64748b',marginTop:4}}>📍 {dashboardData.meetings.next.location}</div>
+                          )}
+                          {dashboardData.meetings.next.link && (
+                            <div style={{fontSize:12,color:'#64748b',marginTop:4}}>🔗 {dashboardData.meetings.next.link}</div>
+                          )}
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div className="no-thesis">
@@ -196,9 +213,20 @@ const Dashboard: React.FC = () => {
                       <p>Aún no cuentas con actividades</p>
                     </div>
                   )}
-                  <button className="view-all-button">
-                    Ver toda la actividad →
-                  </button>
+                  {dashboardData?.recentNotifications && dashboardData.recentNotifications.length > 0 && (
+                    <div style={{marginTop:16}}>
+                      <h4 style={{margin:'0 0 8px 0', fontSize:14, color:'#1f2937'}}>Notificaciones recientes</h4>
+                      <ul style={{listStyle:'none',margin:0,padding:0,display:'flex',flexDirection:'column',gap:8}}>
+                        {dashboardData.recentNotifications.map(n => (
+                          <li key={n.id} style={{display:'flex',gap:8,alignItems:'center',fontSize:13}}>
+                            <span>{n.icon}</span>
+                            <span style={{flex:1}}>{n.message}</span>
+                            <span style={{fontSize:11,color:'#64748b'}}>{n.timeAgo}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -257,6 +285,21 @@ const Dashboard: React.FC = () => {
                       </>
                     )}
                   </div>
+                  {dashboardData?.meetings && (
+                    <div style={{marginTop:20, background:'#f1f5f9', padding:12, borderRadius:8, fontSize:13}}>
+                      <strong style={{display:'block', marginBottom:6}}>Resumen de reuniones</strong>
+                      <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
+                        <span>🕒 Próximas: {dashboardData.meetings.upcomingCount}</span>
+                        <span>📝 Pendientes: {dashboardData.meetings.pendingCount}</span>
+                        {dashboardData.meetings.next && (
+                          <span>➡️ Siguiente: {new Date(`${dashboardData.meetings.next.date}T${dashboardData.meetings.next.time}:00`).toLocaleDateString('es-ES',{day:'numeric',month:'short'})} {dashboardData.meetings.next.time}</span>
+                        )}
+                      </div>
+                      <button style={{marginTop:8, background:'#3b82f6',color:'#fff',border:'none',padding:'6px 12px',borderRadius:6,cursor:'pointer',fontSize:12}} onClick={() => navigate('/mis-reuniones')}>
+                        Ver mis reuniones →
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -278,9 +321,6 @@ const Dashboard: React.FC = () => {
                         <p className="advisor-email">{dashboardData.advisor.email}</p>
                         <div className="advisor-stats">
                           <span>👥 {dashboardData.advisor.totalStudents} estudiantes</span>
-                          <span className={`advisor-status ${dashboardData.advisor.isOnline ? 'online' : 'offline'}`}>
-                            {dashboardData.advisor.isOnline ? '🟢 En línea' : '🔴 Desconectado'}
-                          </span>
                         </div>
                         <button 
                           className="contact-button"
@@ -300,34 +340,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Tareas pendientes */}
-              {dashboardData?.pendingTasks && dashboardData.pendingTasks.length > 0 && (
-                <div className="dashboard-card">
-                  <div className="card-header">
-                    <h3>Tareas Pendientes</h3>
-                    <span className="card-icon">✅</span>
-                  </div>
-                  <div className="card-content">
-                    <div className="pending-tasks">
-                      {dashboardData.pendingTasks.slice(0, 3).map((task) => (
-                        <div key={task.id} className={`task-item priority-${task.priority}`}>
-                          <div className="task-info">
-                            <h5>{task.title}</h5>
-                            <p>{task.description}</p>
-                            <span className="task-time">{task.estimatedTime}</span>
-                          </div>
-                          <button 
-                            className="task-action"
-                            onClick={() => navigate(task.actionUrl)}
-                          >
-                            ▶️
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Tareas pendientes eliminadas por solicitud */}
             </div>
           </div>
         </div>

@@ -1,8 +1,25 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middleware/auth';
 import sequelize from '../config/database';
+import { getIO } from '../config/socket';
 
 const router = Router();
+
+// Utilidad: comprobar si existe una columna en la BD actual
+const columnExists = async (table: string, column: string): Promise<boolean> => {
+  try {
+    const [rows] = await sequelize.query(
+      `SELECT COUNT(*) as cnt
+       FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t AND COLUMN_NAME = :c`,
+      { replacements: { t: table, c: column } }
+    );
+    const cnt = (rows as any[])[0]?.cnt ?? (rows as any[])[0]?.['COUNT(*)'] ?? 0;
+    return Number(cnt) > 0;
+  } catch {
+    return false;
+  }
+};
 
 // 📅 OBTENER HORARIOS DISPONIBLES DE UN ASESOR ESPECÍFICO
 router.get('/advisor/:advisorId', authenticateToken, async (req: Request, res: Response): Promise<void> => {
@@ -235,7 +252,7 @@ router.get('/advisor/:advisorId/slots/:date', authenticateToken, async (req: Req
 router.post('/advisor/:advisorId/reserve', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const { advisorId } = req.params;
-    const { fecha, hora_inicio, hora_fin, modalidad, agenda } = req.body;
+  const { fecha, hora_inicio, hora_fin, modalidad, agenda } = req.body;
     const studentId = (req as any).user?.id;
 
     console.log('📝 Reservando slot:', {
@@ -255,6 +272,13 @@ router.post('/advisor/:advisorId/reserve', authenticateToken, async (req: Reques
       });
       return;
     }
+
+    // Validar modalidad y campos obligatorios según modalidad solicitada (presencial / virtual)
+    if (modalidad && !['presencial', 'virtual', 'mixto'].includes(modalidad)) {
+      res.status(400).json({ success: false, message: 'Modalidad inválida' });
+      return;
+    }
+    // Nota: ubicacion/enlace serán requeridos al momento de la aprobación por el asesor
 
     // 🔍 Obtener datos del estudiante
     const [studentResults] = await sequelize.query(
@@ -317,22 +341,23 @@ router.post('/advisor/:advisorId/reserve', authenticateToken, async (req: Reques
       return;
     }
 
-    // 📝 CREAR REUNIÓN EN ESTADO PENDIENTE (VERSIÓN CORREGIDA)
+  // 📝 CREAR REUNIÓN EN ESTADO PENDIENTE (VERSIÓN CORREGIDA)
     const createMeetingQuery = `
       INSERT INTO reunion (
-        id_tesis, fecha_reunion, hora_inicio, hora_fin, 
-        estado, id_asesor, id_estudiante, agenda
-      ) VALUES (?, ?, ?, ?, 'pendiente', ?, ?, ?)
+        id_tesis, fecha_reunion, hora_inicio, hora_fin,
+        modalidad, estado, id_asesor, id_estudiante, agenda
+      ) VALUES (?, ?, ?, ?, ?, 'pendiente', ?, ?, ?)
     `;
 
     const [meetingResults] = await sequelize.query(createMeetingQuery, {
       replacements: [
-        thesisRows[0].id_tesis, 
-        fecha, 
-        hora_inicio, 
-        hora_fin, 
-        advisorId, 
-        studentId, 
+        thesisRows[0].id_tesis,
+        fecha,
+        hora_inicio,
+        hora_fin,
+        modalidad || null,
+        advisorId,
+        studentId,
         agenda || 'Reunión de seguimiento de tesis'
       ]
     });
@@ -407,7 +432,7 @@ router.post('/advisor/:advisorId/reserve', authenticateToken, async (req: Reques
     });
 
     // 🔔 CREAR NOTIFICACIÓN PARA EL ASESOR
-    const notificationMessage = `📅 Nueva solicitud de reunión de ${studentName} para el ${fecha} de ${hora_inicio} a ${hora_fin}. Tema: ${agenda || 'Reunión de seguimiento'}`;
+  const notificationMessage = `📅 Nueva solicitud (${modalidad || 'sin modalidad'}) de ${studentName} para el ${fecha} de ${hora_inicio} a ${hora_fin}. ${agenda ? 'Tema: ' + agenda : ''}`;
     
     const createNotificationQuery = `
       INSERT INTO notificacion (
@@ -427,6 +452,29 @@ router.post('/advisor/:advisorId/reserve', authenticateToken, async (req: Reques
       hora_fin,
       notificacion_enviada: true
     });
+
+    // 🔔 Emitir evento socket al asesor y al estudiante (para actualizar IU en tiempo real)
+    try {
+      const io = getIO();
+      io.to(`user:${advisorId}`).emit('meeting:created', {
+        id_reunion: meetingId,
+        fecha_reunion: fecha,
+        hora_inicio,
+        hora_fin,
+        estado: 'pendiente',
+        student: studentName,
+        agenda: agenda || 'Reunión de seguimiento'
+      });
+      io.to(`user:${studentId}`).emit('meeting:created', {
+        id_reunion: meetingId,
+        fecha_reunion: fecha,
+        hora_inicio,
+        hora_fin,
+        estado: 'pendiente'
+      });
+    } catch (e) {
+      console.warn('⚠️ No se pudo emitir meeting:created', e);
+    }
 
     res.json({
       success: true,
@@ -459,7 +507,7 @@ router.get('/advisor/:advisorId/pending-meetings', authenticateToken, async (req
   try {
     const { advisorId } = req.params;
     console.log('📋 Obteniendo reuniones pendientes para asesor:', advisorId);
-
+    const hasModalidad = await columnExists('reunion', 'modalidad');
     const pendingMeetingsQuery = `
       SELECT 
         r.id_reunion,
@@ -467,6 +515,7 @@ router.get('/advisor/:advisorId/pending-meetings', authenticateToken, async (req
         r.hora_inicio,
         r.hora_fin,
         r.agenda,
+        ${hasModalidad ? 'r.modalidad,' : `'mixto' AS modalidad,`}
         r.estado,
         r.fecha_creacion,
         CONCAT(u.nombre, ' ', u.apellido) as estudiante_nombre,
@@ -492,7 +541,8 @@ router.get('/advisor/:advisorId/pending-meetings', authenticateToken, async (req
     res.json({
       success: true,
       pending_meetings: meetings,
-      total: meetings.length
+      total: meetings.length,
+      modalidad_column: hasModalidad
     });
 
   } catch (error) {
@@ -505,6 +555,49 @@ router.get('/advisor/:advisorId/pending-meetings', authenticateToken, async (req
   }
 });
 
+// 📚 HISTORIAL: Listar estudiantes con los que el asesor ya tuvo reuniones (no pendientes)
+router.get('/advisor/:advisorId/history/students', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  const { advisorId } = req.params;
+  try {
+    const query = `
+      SELECT DISTINCT u.id_usuario AS id_estudiante, u.nombre AS estudiante_nombre, u.email AS estudiante_email
+      FROM reunion r
+      INNER JOIN usuario u ON u.id_usuario = r.id_estudiante
+      WHERE r.id_asesor = :advisorId AND r.estado IN ('aceptada','rechazada','cancelada','realizada')
+      ORDER BY u.nombre ASC
+    `;
+    const [rows] = await sequelize.query(query, { replacements: { advisorId: Number(advisorId) } });
+    res.json({ success: true, students: rows });
+    return;
+  } catch (e:any) {
+    console.error('❌ Error obteniendo estudiantes historial:', e);
+    res.status(500).json({ success: false, message: 'Error obteniendo historial de estudiantes' });
+    return;
+  }
+});
+
+// 📚 HISTORIAL: Reuniones históricas por estudiante
+router.get('/advisor/:advisorId/history/student/:studentId', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  const { advisorId, studentId } = req.params;
+  try {
+    const query = `
+      SELECT r.id_reunion, r.fecha_reunion, r.hora_inicio, r.hora_fin, r.estado, r.agenda, r.modalidad,
+             r.ubicacion, r.enlace, r.comentarios, r.fecha_creacion
+      FROM reunion r
+      WHERE r.id_asesor = :advisorId AND r.id_estudiante = :studentId
+        AND r.estado IN ('aceptada','rechazada','cancelada','realizada')
+      ORDER BY r.fecha_reunion DESC, r.hora_inicio DESC
+    `;
+    const [rows] = await sequelize.query(query, { replacements: { advisorId: Number(advisorId), studentId: Number(studentId) } });
+    res.json({ success: true, history: rows });
+    return;
+  } catch (e:any) {
+    console.error('❌ Error obteniendo historial por estudiante:', e);
+    res.status(500).json({ success: false, message: 'Error obteniendo historial del estudiante' });
+    return;
+  }
+});
+
 // ✅ APROBAR REUNIÓN
 router.put('/meeting/:meetingId/approve', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
@@ -514,24 +607,46 @@ router.put('/meeting/:meetingId/approve', authenticateToken, async (req: Request
 
     console.log('✅ Aprobando reunión:', meetingId);
 
+    // Obtener modalidad de la reunión para validar campos obligatorios
+    const [modalityRows] = await sequelize.query(
+      'SELECT modalidad FROM reunion WHERE id_reunion = :meetingId AND id_asesor = :advisorId',
+      { replacements: { meetingId: Number(meetingId), advisorId } }
+    );
+    const modality = (modalityRows as any[])[0]?.modalidad as string | null;
+
+    if (modality === 'presencial' && !ubicacion) {
+      res.status(400).json({ success: false, message: 'Ubicación requerida para reuniones presenciales' });
+      return;
+    }
+    if (modality === 'virtual' && !enlace) {
+      res.status(400).json({ success: false, message: 'Enlace requerido para reuniones virtuales' });
+      return;
+    }
+
     // Actualizar reunión a aceptada
     const updateMeetingQuery = `
       UPDATE reunion 
       SET estado = 'aceptada', 
-          ubicacion = ?, 
-          enlace = ?, 
-          comentarios = ?
-      WHERE id_reunion = ? AND id_asesor = ?
+          ubicacion = :ubicacion, 
+          enlace = :enlace, 
+          comentarios = :comentarios
+      WHERE id_reunion = :meetingId AND id_asesor = :advisorId
     `;
 
     await sequelize.query(updateMeetingQuery, {
-      replacements: [ubicacion, enlace, comentarios, meetingId, advisorId]
+      replacements: {
+        ubicacion: ubicacion ?? null,
+        enlace: enlace ?? null,
+        comentarios: comentarios ?? null,
+        meetingId: Number(meetingId),
+        advisorId
+      }
     });
 
     // Actualizar slot a ocupado
     await sequelize.query(
-      'UPDATE slots_ocupados SET estado = "ocupado", motivo = "Reunión confirmada" WHERE id_reunion = ?',
-      { replacements: [meetingId] }
+      'UPDATE slots_ocupados SET estado = "ocupado", motivo = "Reunión confirmada" WHERE id_reunion = :meetingId',
+      { replacements: { meetingId: Number(meetingId) } }
     );
 
     // Obtener datos para notificación al estudiante
@@ -542,20 +657,34 @@ router.put('/meeting/:meetingId/approve', authenticateToken, async (req: Request
        FROM reunion r 
        JOIN usuario u_estudiante ON r.id_estudiante = u_estudiante.id_usuario
        JOIN usuario u_asesor ON r.id_asesor = u_asesor.id_usuario  
-       WHERE r.id_reunion = ?`,
-      { replacements: [meetingId] }
+       WHERE r.id_reunion = :meetingId`,
+      { replacements: { meetingId: Number(meetingId) } }
     );
     const meeting = (meetingData as any[])[0];
+
+    if (!meeting) {
+      res.status(404).json({ success: false, message: 'Reunión no encontrada' });
+      return;
+    }
 
     // Notificar al estudiante
     const studentNotification = `✅ Tu reunión del ${meeting.fecha_reunion} a las ${meeting.hora_inicio} fue APROBADA por ${meeting.asesor_nombre}. ${ubicacion ? `Ubicación: ${ubicacion}` : ''} ${enlace ? `Enlace: ${enlace}` : ''}`;
     
     await sequelize.query(
-      'INSERT INTO notificacion (id_usuario, mensaje, tipo, tipo_referencia, id_referencia, prioridad) VALUES (?, ?, "reunion", "reunion", ?, "alta")',
-      { replacements: [meeting.id_estudiante, studentNotification, meetingId] }
+      'INSERT INTO notificacion (id_usuario, mensaje, tipo, tipo_referencia, id_referencia, prioridad) VALUES (:id_usuario, :mensaje, "reunion", "reunion", :id_referencia, "alta")',
+      { replacements: { id_usuario: meeting.id_estudiante, mensaje: studentNotification, id_referencia: Number(meetingId) } }
     );
 
     console.log('✅ Reunión aprobada y estudiante notificado');
+
+    // 🔔 Emitir evento de actualización
+    try {
+      const io = getIO();
+      io.to(`user:${advisorId}`).emit('meeting:updated', { meeting_id: meetingId, estado: 'aceptada' });
+      io.to(`user:${meeting.id_estudiante}`).emit('meeting:updated', { meeting_id: meetingId, estado: 'aceptada' });
+    } catch (e) {
+      console.warn('⚠️ No se pudo emitir meeting:updated (approve)', e);
+    }
 
     res.json({
       success: true,
@@ -616,6 +745,15 @@ router.put('/meeting/:meetingId/reject', authenticateToken, async (req: Request,
 
     console.log('❌ Reunión rechazada y estudiante notificado');
 
+    // 🔔 Emitir evento de actualización
+    try {
+      const io = getIO();
+      io.to(`user:${advisorId}`).emit('meeting:updated', { meeting_id: meetingId, estado: 'rechazada' });
+      io.to(`user:${meeting.id_estudiante}`).emit('meeting:updated', { meeting_id: meetingId, estado: 'rechazada' });
+    } catch (e) {
+      console.warn('⚠️ No se pudo emitir meeting:updated (reject)', e);
+    }
+
     res.json({
       success: true,
       message: 'Reunión rechazada',
@@ -640,6 +778,18 @@ router.get('/student/my-meetings', authenticateToken, async (req: Request, res: 
     const studentId = (req as any).user?.id;
     console.log('📊 Obteniendo reuniones del estudiante:', studentId);
 
+    // Debug rápido: base de datos activa y puerto
+    try {
+      const [dbInfo] = await sequelize.query("SELECT DATABASE() AS db, @@hostname AS host, @@port AS port");
+      // @ts-ignore
+      const info = (dbInfo as any[])[0];
+      console.log(`🗄️ DB activa: ${info.db} @ ${info.host}:${info.port}`);
+    } catch (e) {
+      console.warn('⚠️ No se pudo obtener info de la BD', e);
+    }
+
+    // Comprobar si la columna modalidad ya existe para evitar error 1054
+    const hasModalidad = await columnExists('reunion', 'modalidad');
     const meetingsQuery = `
       SELECT 
         r.id_reunion,
@@ -647,6 +797,7 @@ router.get('/student/my-meetings', authenticateToken, async (req: Request, res: 
         r.hora_inicio,
         r.hora_fin,
         r.agenda,
+        ${hasModalidad ? 'r.modalidad,' : `'mixto' AS modalidad,`}
         r.estado,
         r.ubicacion,
         r.enlace,
@@ -673,7 +824,8 @@ router.get('/student/my-meetings', authenticateToken, async (req: Request, res: 
     res.json({
       success: true,
       meetings,
-      total: meetings.length
+      total: meetings.length,
+      modalidad_column: hasModalidad
     });
 
   } catch (error) {
@@ -683,6 +835,31 @@ router.get('/student/my-meetings', authenticateToken, async (req: Request, res: 
       message: 'Error interno del servidor',
       error: process.env.NODE_ENV === 'development' ? (error as Error).message : 'Error interno'
     });
+  }
+});
+
+// 🔎 DEBUG: Información de BD y conteos rápidos para diagnóstico
+router.get('/debug/db-info', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const [dbRows] = await sequelize.query("SELECT DATABASE() AS db, @@hostname AS host, @@port AS port, @@version AS version");
+    const db = (dbRows as any[])[0];
+
+    const studentId = Number((req.query.student_id as string) || 43);
+    const [countRows] = await sequelize.query(
+      'SELECT COUNT(*) AS cnt FROM reunion WHERE id_estudiante = ?',
+      { replacements: [studentId] }
+    );
+    const cnt = (countRows as any[])[0]?.cnt ?? 0;
+
+    res.json({
+      ok: true,
+      db,
+      counts: {
+        reunion_by_student: cnt
+      }
+    });
+  } catch (e: any) {
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 

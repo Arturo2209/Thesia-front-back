@@ -3,6 +3,11 @@ import ResourcesList from './components/ResourcesList';
 import Sidebar from '../Layout/Sidebar';
 import { dashboardStyles } from '../../Dashboard/Dashboard.styles';
 
+// Inyectar override puntual para fondo blanco en recursos si otro estilo gris persiste
+const resourcesOverride = `
+  .dashboard-container, .main-content { background: #ffffff !important; }
+`;
+
 const AdvisorResourcesPage = () => {
   return (
     <div className="dashboard-container">
@@ -16,7 +21,7 @@ const AdvisorResourcesPage = () => {
           <ResourcesList />
         </div>
       </div>
-      <style>{dashboardStyles}</style>
+  <style>{dashboardStyles + resourcesOverride}</style>
     </div>
   );
 };

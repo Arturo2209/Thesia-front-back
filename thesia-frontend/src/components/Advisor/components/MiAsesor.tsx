@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../Layout/Sidebar';
 import Chat from './Chat';
-import AdvisorSchedule from './AdvisorSchedule';
+// import AdvisorSchedule from './AdvisorSchedule';
 import type { TabType, Advisor } from '../types/advisor.types';
+// import StudentMeetingsList from './StudentMeetingsList';
 import { miAsesorStyles } from '../styles/MiAsesor.styles';
 import advisorService from '../../../services/advisorService';
 import authService from '../../../services/authService'; // ← AGREGAR ESTA LÍNEA
@@ -74,18 +75,7 @@ const MiAsesor: React.FC = () => {
     }
   };
 
-  const handleScheduleMeeting = async () => {
-    if (!advisor) return;
-    
-    try {
-      console.log('📅 Agendar reunión con:', advisor.name);
-      setActiveTab('horarios');
-      
-    } catch (error) {
-      console.error('❌ Error agendando reunión:', error);
-      alert('❌ Error agendando reunión');
-    }
-  };
+  // Botón de agendar reunión eliminado según requerimiento; función ya no necesaria.
 
   // ✅ USAR LA MISMA FUNCIÓN DE LOGOUT QUE DOCUMENTS.TSX
   const handleLogout = async () => {
@@ -106,14 +96,7 @@ const MiAsesor: React.FC = () => {
       .slice(0, 2);
   };
 
-  // 🎨 Obtener estado de disponibilidad
-  const getAvailabilityStatus = (available: boolean) => {
-    return available ? 'available' : 'busy';
-  };
-
-  const getAvailabilityText = (available: boolean) => {
-    return available ? '● Disponible' : '● Ocupado';
-  };
+  // Estado de disponibilidad: no se muestra en UI por requerimiento
 
   // LOADING STATE
   if (loading) {
@@ -222,9 +205,6 @@ const MiAsesor: React.FC = () => {
               <div className="advisor-details">
                 <div className="advisor-name-status">
                   <h3>{advisor.name}</h3>
-                  <span className={`status-badge ${getAvailabilityStatus(advisor.disponible)}`}>
-                    {getAvailabilityText(advisor.disponible)}
-                  </span>
                 </div>
                 <p className="advisor-title">{advisor.specialty}</p>
                 <div className="advisor-stats">
@@ -233,14 +213,7 @@ const MiAsesor: React.FC = () => {
                   <span className="completed">45 tesis completadas</span>
                 </div>
               </div>
-              
-              <button 
-                onClick={handleScheduleMeeting} 
-                className="schedule-btn"
-                disabled={!advisor.disponible}
-              >
-                📅 Agendar Reunión
-              </button>
+
             </div>
           </div>
 
@@ -259,12 +232,7 @@ const MiAsesor: React.FC = () => {
               >
                 💬 Comunicación
               </button>
-              <button 
-                className={`tab ${activeTab === 'horarios' ? 'active' : ''}`}
-                onClick={() => setActiveTab('horarios')}
-              >
-                📅 Horarios
-              </button>
+              {/* Tabs de horarios y reuniones fueron movidos a /mis-reuniones */}
             </div>
 
             {/* TAB CONTENT */}
@@ -346,11 +314,7 @@ const MiAsesor: React.FC = () => {
                 </div>
               )}
 
-              {activeTab === 'horarios' && (
-                <div className="schedule-content">
-                  <AdvisorSchedule advisor={advisor} />
-                </div>
-              )}
+              {/* Contenidos de horarios y reuniones removidos */}
             </div>
           </div>
         </div>

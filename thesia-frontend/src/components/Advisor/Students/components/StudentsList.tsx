@@ -121,7 +121,7 @@ const StudentsList: React.FC = () => {
                       <small style={{fontWeight:400, color:'#6b7280'}}>{student.email}</small>
                     </span>
                   </div>
-                  <div className="status-badge gray">{formatPhase(student.phase)}</div>
+                  <div className="status-badge gray" title="Fase actual (mayor entregada, aprobada o no)">{formatPhase(student.currentPhase || student.phase)}</div>
                 </div>
                 <div className="document-meta">
                   <div className="meta-item"><span className="meta-label">Especialidad:</span><span className="meta-value">{student.specialty || 'N/D'}</span></div>

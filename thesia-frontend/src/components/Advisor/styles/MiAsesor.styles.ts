@@ -193,9 +193,10 @@ export const miAsesorStyles = `
   /* === TABS CONTAINER === */
   .tabs-container {
     background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 18px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.07);
     overflow: hidden;
+    width: 100%;
   }
 
   .tabs {
@@ -230,7 +231,27 @@ export const miAsesorStyles = `
   }
 
   .tab-content {
-    padding: 24px;
+    padding: 40px;
+    /* Altura mínima uniforme para evitar jumps entre pestañas */
+    min-height: 880px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Asegurar que el contenido del perfil no reduzca la altura total */
+  .profile-content,
+  .communication-content {
+    min-height: 820px;
+    width: 100%;
+  }
+
+  .communication-content {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 24px;
+    padding: 40px 44px;
+    box-shadow: 0 6px 22px -4px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+    box-sizing: border-box;
   }
 
   /* === PROFILE TAB CONTENT === */

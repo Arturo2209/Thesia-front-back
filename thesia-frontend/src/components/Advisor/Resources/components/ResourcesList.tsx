@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import documentsService from '../../../../services/documentsService';
 import type { AdvisorResource, UploadGuideForm } from '../types/resource.types';
 import '../styles/ResourcesList.styles.css';
+// Reutilizamos estilos globales de tarjetas/botones del dashboard para unificar diseño
+import { dashboardStyles } from '../../../Dashboard/Dashboard.styles';
 
 const phaseOptions = [
   { value: 'general', label: 'General (todas las fases)' },
@@ -111,7 +113,7 @@ const ResourcesList: React.FC = () => {
   };
 
   return (
-    <div className="resources-page">
+    <div className="resources-page content-section">
       <div className="resources-header">
         <div>
           <h2 className="resources-title">📚 Recursos y Guías</h2>
@@ -121,8 +123,12 @@ const ResourcesList: React.FC = () => {
 
       <div className="resources-layout">
         {/* Panel de subida */}
-        <div className="upload-panel">
-          <h3 className="panel-title">Subir nueva guía</h3>
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3>Subir nueva guía</h3>
+            <span className="card-icon" aria-hidden>📤</span>
+          </div>
+          <div className="card-content">
           <form onSubmit={submitGuide} className="upload-form-guides">
             <div className="form-row">
               <label className="form-label">Archivo (PDF / DOC / DOCX)</label>
@@ -140,7 +146,7 @@ const ResourcesList: React.FC = () => {
                 {phaseOptions.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </div>
-            <button type="submit" className="primary-btn" disabled={uploading || !uploadForm.file}>
+            <button type="submit" className="retry-button" disabled={uploading || !uploadForm.file}>
               {uploading ? 'Subiendo...' : 'Subir Guía'}
             </button>
             {successMsg && <div className="success-inline">✅ {successMsg}</div>}
@@ -153,11 +159,16 @@ const ResourcesList: React.FC = () => {
               <li>Usa la fase para guías específicas; deja "General" para material transversal.</li>
             </ul>
           </div>
+          </div>
         </div>
 
         {/* Lista de guías */}
-        <div className="guides-panel">
-          <h3 className="panel-title">Mis guías subidas</h3>
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3>Mis guías subidas</h3>
+            <span className="card-icon" aria-hidden>📚</span>
+          </div>
+          <div className="card-content">
           {loading && <div className="loading-box">Cargando guías...</div>}
           {error && <div className="error-box">❌ {error}</div>}
           {!loading && guides.length === 0 && !error && (
@@ -183,8 +194,11 @@ const ResourcesList: React.FC = () => {
               </div>
             ))}
           </div>
+          </div>
         </div>
       </div>
+      {/* Inyectamos estilos del dashboard para unificar tipografías, tarjetas y botones */}
+      <style>{dashboardStyles}</style>
     </div>
   );
 };

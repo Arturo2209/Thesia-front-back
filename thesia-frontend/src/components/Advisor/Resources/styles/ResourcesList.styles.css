@@ -1,6 +1,7 @@
 /* ====== PAGE WRAPPER ====== */
 .resources-page {
   width: 100%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .resources-header {
@@ -26,18 +27,16 @@
 /* ====== GRID LAYOUT ====== */
 .resources-layout {
   display: grid;
-  grid-template-columns: 360px 1fr;
+  grid-template-columns: 1fr 1fr; /* ocupar más ancho como en advisor/students */
   gap: 24px;
+  width: 100%;
+  max-width: 100%;
+  align-items: start;
 }
 
-/* ====== UPLOAD PANEL ====== */
-.upload-panel {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  padding: 20px;
-  height: fit-content;
-}
+/* ====== UPLOAD PANEL (reemplazado por dashboard-card en el componente) ====== */
+/* Mantener selector por si queda referencia legacy */
+.upload-panel { display:none; }
 
 .panel-title {
   margin: 0 0 12px;
@@ -68,9 +67,17 @@
   background: #f9fafb;
   font-size: 14px;
   color: #374151;
+  font-family: inherit;
 }
 
 .upload-form-guides textarea { min-height: 90px; resize: vertical; }
+
+/* Asegurar tipografía también en el placeholder de la descripción */
+.upload-form-guides textarea::placeholder {
+  color: #6b7280;
+  opacity: 1;
+  font-family: inherit;
+}
 
 .char-count {
   font-size: 12px;
@@ -116,13 +123,8 @@
 .help-box { margin-top: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; font-size: 13px; color: #374151; }
 .help-box ul { margin: 6px 0 0 18px; }
 
-/* ====== GUIDES LIST PANEL ====== */
-.guides-panel {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  padding: 20px;
-}
+/* ====== GUIDES LIST PANEL (reemplazado por dashboard-card) ====== */
+.guides-panel { display:none; }
 
 .loading-box, .error-box, .empty-box {
   padding: 16px;
@@ -136,19 +138,21 @@
 
 .guides-list { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
 
+/* Ajuste para alinear visualmente con document-card de students */
 .guide-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 16px;
+  padding: 20px;
   border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  background: #f9fafb;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   transition: all .2s;
 }
 
-.guide-card:hover { background: #fff; box-shadow: 0 6px 12px rgba(0,0,0,.06); transform: translateY(-1px); }
+.guide-card:hover { background: #fff; box-shadow: 0 4px 16px rgba(0,0,0,0.15); transform: translateY(-2px); }
 .guide-card.inactive { opacity: .7; }
 
 .guide-main { flex: 1; min-width: 0; }
@@ -164,6 +168,9 @@
 .action-btn:hover { background: #e5e7eb; transform: translateY(-1px); }
 .action-btn.delete { background: #fee2e2; border-color: #fecaca; color: #991b1b; }
 .action-btn.delete:hover { background: #fecaca; }
+
+/* El botón reutilizado del dashboard (retry-button) a ancho completo en este formulario */
+.upload-form-guides .retry-button { width: 100%; }
 
 /* ====== RESPONSIVE ====== */
 @media (max-width: 1024px) {

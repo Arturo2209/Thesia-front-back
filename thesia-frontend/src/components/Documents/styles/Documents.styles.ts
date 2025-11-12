@@ -4,26 +4,24 @@ export const documentsStyles = `
     flex-direction: row;
     min-height: 100vh;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f5f7fa;
+    background: #ffffff; /* Unificar fondo blanco */
     overflow-x: hidden;
   }
 
   .main-content {
     flex: 1;
     margin-left: 280px;
-    padding: 32px;
+    /* Sin padding ni sombra para que el header quede pegado a la pantalla */
     background: #ffffff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     overflow-y: auto;
   }
 
   .main-header {
-    background: white;
-    padding: 16px 24px;
+    background: #ffffff;
+    padding: 16px 24px; /* El padding vive en el header, no en main-content */
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     position: sticky;
     top: 0;
     left: 0;
@@ -117,7 +115,7 @@ export const documentsStyles = `
   }
 
   .content-section {
-    padding: 32px;
+    padding: 32px; /* El contenido sí tiene padding */
     box-sizing: border-box;
   }
 

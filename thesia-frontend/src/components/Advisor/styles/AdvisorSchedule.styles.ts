@@ -1,15 +1,16 @@
 export const advisorScheduleStyles = `
   .schedule-container {
-    padding: 20px;
-    max-width: 800px;
-    margin: 0 auto;
+    padding: 0; /* el contenedor externo ya agrega padding */
+    max-width: 100%;
+    margin: 0;
+    width: 100%;
   }
 
   .schedule-header {
-    text-align: center;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #e5e7eb;
+    text-align: left;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e5e7eb;
   }
 
   .schedule-header h3 {
@@ -41,7 +42,7 @@ export const advisorScheduleStyles = `
 
   .schedule-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
     margin-bottom: 30px;
   }
@@ -204,6 +205,10 @@ export const advisorScheduleStyles = `
     100% { transform: rotate(360deg); }
   }
 
+  @media (max-width: 1024px) {
+    .schedule-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
   @media (max-width: 768px) {
     .schedule-grid {
       grid-template-columns: 1fr;
@@ -213,8 +218,6 @@ export const advisorScheduleStyles = `
       grid-template-columns: 1fr;
     }
 
-    .schedule-container {
-      padding: 15px;
-    }
+    .schedule-container { padding: 0; }
   }
 `;

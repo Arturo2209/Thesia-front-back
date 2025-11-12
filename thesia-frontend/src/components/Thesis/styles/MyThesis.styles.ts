@@ -17,20 +17,16 @@ export const baseStyles = `
   .main-content {
     flex: 1;
     margin-left: 280px; /* Ajuste para respetar el ancho del Sidebar */
-    padding: 32px;
-    max-width: calc(100vw - 280px); /* Ajuste dinámico para evitar espacio adicional */
     background: #ffffff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    border-radius: 8px;
+    /* El padding y spacing se maneja en .content-section para que el header quede pegado */
   }
 
   .main-header {
-    background: white;
+    background: #ffffff;
     padding: 16px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -56,7 +52,7 @@ export const baseStyles = `
   }
 
   .content-section {
-    padding: 32px;
+    padding: 32px; /* Mantener padding interno aquí */
     width: 100%;
     max-width: none;
   }
@@ -97,10 +93,8 @@ export const baseStyles = `
   @media (max-width: 1024px) {
     .main-content {
       margin-left: 260px;
-      max-width: calc(100vw - 260px);
-      padding: 24px;
     }
-
+    
     .content-section {
       padding: 24px;
     }
@@ -109,8 +103,6 @@ export const baseStyles = `
   @media (max-width: 768px) {
     .main-content {
       margin-left: 0;
-      max-width: 100vw;
-      padding: 16px;
     }
 
     .content-section {

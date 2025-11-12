@@ -107,6 +107,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
         <div className={getNavItemClass('/mi-asesor')} onClick={() => handleNavigation('/mi-asesor')}>
           <span className="nav-text">Mi Asesor</span>
         </div>
+
+        <div className={getNavItemClass('/mis-reuniones')} onClick={() => handleNavigation('/mis-reuniones')}>
+          <span className="nav-text">Reuniones</span>
+        </div>
         
         <div className={getNavItemClass('/notificaciones')} onClick={() => handleNavigation('/notificaciones')}>
           <span className="nav-text">Notificaciones</span>

@@ -30,14 +30,18 @@ export function mapPhaseToFrontend(fase: string): string {
 
 // Utilidad: Convierte estado de BD a valor para frontend
 export function mapStatusToFrontend(estado: string): string {
+  // Normalizar estados a códigos en minúscula esperados por el frontend
+  // Valores soportados en front: 'pendiente' | 'en_revision' | 'aprobado' | 'rechazado'
+  const normalized = (estado || '').toLowerCase();
   const statusMap: Record<string, string> = {
-    'pendiente': 'Pendiente',
-    'aprobado': 'Aprobado',
-    'rechazado': 'Rechazado',
-    'observado': 'Observado',
-    'finalizado': 'Finalizado'
+    pendiente: 'pendiente',
+    en_revision: 'en_revision',
+    aprobado: 'aprobado',
+    rechazado: 'rechazado',
+    observado: 'rechazado', // Mapear observado a rechazado si existiese en BD
+    finalizado: 'aprobado'  // Mapear finalizado a aprobado para métricas
   };
-  return statusMap[estado.toLowerCase()] || estado;
+  return statusMap[normalized] || normalized;
 }
 
 // Utilidad: Formatea tamaño de archivo en bytes a string legible

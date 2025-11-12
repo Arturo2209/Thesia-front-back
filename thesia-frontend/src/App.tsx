@@ -1,5 +1,6 @@
 import AdvisorResourcesPage from './components/Advisor/Resources';
 import AdvisorDocumentsPage from './components/Advisor/Documents';
+import AdvisorMeetingsPage from './components/Advisor/Meetings/AdvisorMeetingsPage';
 import AdvisorDocumentDetailPage from './components/Advisor/Documents/AdvisorDocumentDetailPage';
 import AdvisorThesesPage from './components/Advisor/Theses';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -10,16 +11,20 @@ import Dashboard from './components/Dashboard/Dashboard';
 import MyThesis from './components/Thesis/MyThesis';
 import Documents from './components/Documents/Documents'; // ✅ CAMBIO: Import correcto
 import MiAsesor from './components/Advisor/components/MiAsesor';
+import StudentMeetingsPage from './components/Meetings/StudentMeetingsPage';
 import RecursoGuia from './components/Progress/RecursoGuia';
 import Notificaciones from './components/Notifications/Notificaciones';
 import AdvisorDashboard from './components/Advisor/Dashboard';
 import StudentsView from './components/Advisor/Students/StudentsView';
 import StudentDetailPage from './components/Advisor/Students/StudentDetailPage';
+import { layoutStyles } from './styles/layoutStyles';
 
 function App() {
   return (
-    <Router>
-      <Routes>
+    <>
+      <style>{layoutStyles}</style>
+      <Router>
+        <Routes>
         {/* 🔓 RUTA PÚBLICA (Solo Login) */}
         <Route path="/" element={<Login />} />
 
@@ -55,6 +60,12 @@ function App() {
         <Route path="/mi-asesor" element={
           <ProtectedRoute>
             <MiAsesor />
+          </ProtectedRoute>
+        } />
+        {/* 📅 RUTA: Reuniones Estudiante */}
+        <Route path="/mis-reuniones" element={
+          <ProtectedRoute>
+            <StudentMeetingsPage />
           </ProtectedRoute>
         } />
         
@@ -114,11 +125,18 @@ function App() {
             <AdvisorResourcesPage />
           </ProtectedRoute>
         } />
+        {/* 📅 RUTA: Reuniones Asesor */}
+        <Route path="/advisor/meetings" element={
+          <ProtectedRoute>
+            <AdvisorMeetingsPage />
+          </ProtectedRoute>
+        } />
 
         {/* 🚫 RUTA FALLBACK - Cualquier otra URL redirige al login */}
         <Route path="*" element={<Login />} />
-      </Routes>
-    </Router>
+        </Routes>
+      </Router>
+    </>
   );
 }
 

@@ -254,8 +254,11 @@ const AdvisorDocumentDetail: React.FC<AdvisorDocumentDetailProps> = ({ documentI
           </div>
         )}
         {/* Formulario de nuevo comentario */}
-        <div className="document-card" style={{ marginTop: 16 }}>
-          <h3>Agregar comentario</h3>
+        <div className="comment-compose">
+          <div className="compose-header">
+            <h3>Agregar comentario</h3>
+            <span className="compose-hint">Máximo 800 caracteres • Usa un tono claro y específico</span>
+          </div>
           <CommentForm documentId={document.id} onAdded={loadDetail} />
         </div>
       </div>
@@ -268,8 +271,12 @@ const AdvisorDocumentDetail: React.FC<AdvisorDocumentDetailProps> = ({ documentI
 const CommentForm: React.FC<{ documentId: number; onAdded: () => void }> = ({ documentId, onAdded }) => {
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
+  const maxLength = 800;
+  const remaining = maxLength - text.length;
+  const tooLong = remaining < 0;
+
   const save = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() || tooLong) return;
     try {
       setSaving(true);
       await advisorService.commentOnDocument(documentId, text.trim());
@@ -279,21 +286,31 @@ const CommentForm: React.FC<{ documentId: number; onAdded: () => void }> = ({ do
       setSaving(false);
     }
   };
+
   return (
-    <div>
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={4}
-        style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #ddd' }}
-        placeholder="Escribe tu comentario..."
-      />
-      <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-        <button className="action-button primary" onClick={save} disabled={saving || !text.trim()}>
+    <form onSubmit={(e) => { e.preventDefault(); save(); }} className="comment-form">
+      <div className="comment-field-wrapper">
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={5}
+          maxLength={maxLength + 50} /* pequeño buffer por si excede */
+          className="comment-textarea"
+          placeholder="Escribe tu comentario para orientar al estudiante..."
+        />
+        <div className="comment-meta-row">
+          <span className={`char-remaining ${tooLong ? 'error' : remaining < 80 ? 'warn' : ''}`}>{remaining} caracteres restantes</span>
+        </div>
+      </div>
+      <div className="comment-actions">
+        <button type="submit" className="action-button primary" disabled={saving || !text.trim() || tooLong}>
           {saving ? 'Guardando...' : 'Guardar comentario'}
         </button>
+        <button type="button" className="action-button secondary" disabled={saving || text.length === 0} onClick={() => setText('')}>
+          Limpiar
+        </button>
       </div>
-    </div>
+    </form>
   );
 };
 

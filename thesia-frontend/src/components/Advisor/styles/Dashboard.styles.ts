@@ -5,12 +5,13 @@ export const dashboardStyles = `
     width: 100vw;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     overflow-x: hidden;
+    background: #ffffff; /* Asegurar fondo blanco global en vistas de asesor */
   }
 
   .main-content {
     flex: 1;
     margin-left: 280px;
-    background: #f5f5f5;
+    background: #ffffff; /* Unificar fondo blanco como otras vistas */
     min-height: 100vh;
     width: calc(100vw - 280px);
   }
@@ -46,11 +47,7 @@ export const dashboardStyles = `
     background: #f0f0f0;
   }
 
-  .dashboard-content {
-    padding: 32px;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
+  /* Usamos .content-section global (layoutStyles) para padding y ancho completo */
 
   .dashboard-header {
     display: flex;
@@ -166,6 +163,74 @@ export const dashboardStyles = `
     color: #333;
     margin: 0 0 1.5rem 0;
   }
+
+  /* === NUEVO: Rejilla principal de paneles (2 columnas full-width) === */
+  .panel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 24px 0;
+  }
+
+  @media (max-width: 1024px) {
+    .panel-grid { grid-template-columns: 1fr; }
+  }
+
+  /* === NUEVO: Acciones rápidas en grilla === */
+  .actions-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  @media (max-width: 1024px) {
+    .actions-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .actions-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Reusar estilos de botones de acción base del dashboard de estudiante y variantes */
+  .action-button.primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: #fff;
+    border: none;
+  }
+  .action-button.primary:hover { background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%); }
+  .action-button.secondary {
+    border: 1px solid #e5e7eb;
+    background: #f8fafc;
+    color: #1f2937;
+  }
+  .action-button.secondary:hover { background: #f1f5f9; }
+
+  /* === NUEVO: Listas compactas === */
+  .item-list { list-style: none; padding: 0; margin: 0; }
+  .item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .item:last-child { border-bottom: none; }
+  .item-main { display: flex; align-items: center; gap: 12px; }
+  .item-icon { font-size: 20px; }
+  .item-texts { display: flex; flex-direction: column; }
+  .item-title { font-weight: 600; color: #1f2937; font-size: 14px; }
+  .item-subtitle { color: #6b7280; font-size: 12px; }
+  .item-meta { display: flex; align-items: center; gap: 8px; }
+  .link { color: #3b82f6; font-weight: 600; text-decoration: none; font-size: 13px; }
+  .link:hover { text-decoration: underline; }
+  .muted { color: #6b7280; font-size: 14px; }
+  .tag { padding: 4px 8px; border-radius: 9999px; font-size: 12px; font-weight: 600; }
+  .tag.warning { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+
+  /* === NUEVO: Guías resumen === */
+  .guides-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .guide-count { display: flex; align-items: center; gap: 12px; }
+  .big-number { font-size: 32px; font-weight: 800; color: #1f2937; }
+  .label { color: #6b7280; font-size: 14px; }
 
   @media (max-width: 1024px) {
     .main-content {

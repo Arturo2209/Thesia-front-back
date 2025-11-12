@@ -392,6 +392,73 @@ export const documentDetailStyles = `
     padding: 24px 32px;
   }
 
+  /* === COMMENT COMPOSE (advisor) === */
+  .comment-compose {
+    padding: 24px 32px;
+    border-top: 1px solid #e5e7eb;
+    background: #ffffff;
+  }
+
+  .compose-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .compose-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  .compose-hint {
+    color: #6b7280;
+    font-size: 12px;
+  }
+
+  .comment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .comment-field-wrapper { display: flex; flex-direction: column; gap: 8px; }
+
+  .comment-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 2px solid #e5e7eb;
+    background: #f9fafb;
+    font-size: 14px;
+    color: #1f2937;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    resize: vertical;
+  }
+
+  .comment-textarea:focus {
+    border-color: #3b82f6;
+    background: #ffffff;
+  }
+
+  .comment-textarea::placeholder {
+    color: #9ca3af;
+    opacity: 1;
+    font-family: inherit;
+  }
+
+  .comment-meta-row { display: flex; justify-content: flex-end; }
+  .char-remaining { font-size: 12px; color: #6b7280; }
+  .char-remaining.warn { color: #92400e; }
+  .char-remaining.error { color: #b91c1c; }
+
+  .comment-actions { display: flex; gap: 8px; }
+
   .comment-card {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
@@ -626,7 +693,8 @@ export const documentDetailStyles = `
 
     .document-metadata,
     .comments-header,
-    .comments-list {
+    .comments-list,
+    .comment-compose {
       padding: 16px 24px;
     }
 
@@ -674,6 +742,7 @@ export const documentDetailStyles = `
     .document-metadata,
     .comments-header,
     .comments-list,
+    .comment-compose,
     .status-actions,
     .detail-header {
       padding: 16px;

@@ -49,6 +49,28 @@ interface CurrentUser {
 // (Se removió el almacenamiento en localStorage para mantener el chat limpio y en tiempo real)
 
 const Chat: React.FC<ChatProps> = ({ advisor }) => {
+  // Altura fija por breakpoint para que no cambie al alternar pestañas
+  const getChatHeight = () => {
+    const w = window.innerWidth;
+    if (w <= 480) return 520; // móvil
+    if (w <= 768) return 560; // tablet vertical
+    if (w <= 1024) return 640; // tablet horizontal / laptops pequeñas
+    return 700; // desktop
+  };
+
+  const [chatHeight, setChatHeight] = useState<number>(() => {
+    if (typeof window === 'undefined') return 700;
+    return getChatHeight();
+  });
+
+  useEffect(() => {
+    const onResize = () => setChatHeight(getChatHeight());
+    window.addEventListener('resize', onResize);
+    // Debug para confirmar aplicación de altura
+    console.log('[Chat] Altura inicial calculada:', getChatHeight());
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   const [chatState, setChatState] = useState<ChatState>({
     messages: [],
     loading: false,
@@ -421,7 +443,7 @@ const Chat: React.FC<ChatProps> = ({ advisor }) => {
   // Estados de carga
   if (chatState.loading && chatState.messages.length === 0) {
     return (
-      <div className="chat-container">
+      <div className="chat-container" style={{height: chatHeight, minHeight: chatHeight, maxHeight: chatHeight}}>
         <div className="chat-loading">
           <div className="chat-spinner"></div>
           Cargando conversación...
@@ -433,7 +455,7 @@ const Chat: React.FC<ChatProps> = ({ advisor }) => {
 
   if (!currentUser) {
     return (
-      <div className="chat-container">
+      <div className="chat-container" style={{height: chatHeight, minHeight: chatHeight, maxHeight: chatHeight}}>
         <div className="chat-loading">
           <div className="chat-spinner"></div>
           Cargando usuario...
@@ -444,7 +466,7 @@ const Chat: React.FC<ChatProps> = ({ advisor }) => {
   }
 
   return (
-    <div className="chat-container">
+    <div className="chat-container" style={{height: chatHeight, minHeight: chatHeight, maxHeight: chatHeight}}>
       {/* === CHAT HEADER MEJORADO === */}
       <div className="chat-header">
         <div className="chat-header-avatar">
@@ -458,9 +480,7 @@ const Chat: React.FC<ChatProps> = ({ advisor }) => {
           <h4>{advisor.name}</h4>
           <p>{advisor.specialty}</p>
         </div>
-        <div className="chat-status online">
-          🟢 Disponible
-        </div>
+        {/* Estado eliminado por requerimiento (Disponible/Ocupado oculto) */}
         
         {/* BOTÓN DE DEBUG (solo en desarrollo) */}
         {import.meta.env.DEV && (

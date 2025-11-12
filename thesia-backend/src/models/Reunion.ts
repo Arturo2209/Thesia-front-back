@@ -7,6 +7,7 @@ interface ReunionAttributes {
   fecha_reunion: Date;
   hora_inicio: string;
   hora_fin: string;
+  modalidad?: 'presencial' | 'virtual' | 'mixto';
   enlace?: string;
   ubicacion?: string;
   estado: 'pendiente' | 'realizada' | 'cancelada';
@@ -27,6 +28,7 @@ class Reunion extends Model<ReunionAttributes, ReunionCreationAttributes> implem
   declare fecha_reunion: Date;
   declare hora_inicio: string;
   declare hora_fin: string;
+  declare modalidad?: 'presencial' | 'virtual' | 'mixto';
   declare enlace?: string;
   declare ubicacion?: string;
   declare estado: 'pendiente' | 'realizada' | 'cancelada';
@@ -61,6 +63,10 @@ Reunion.init(
     hora_fin: {
       type: DataTypes.STRING(10),
       allowNull: false,
+    },
+    modalidad: {
+      type: DataTypes.ENUM('presencial', 'virtual', 'mixto'),
+      allowNull: true,
     },
     enlace: {
       type: DataTypes.STRING(255),

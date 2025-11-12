@@ -102,14 +102,7 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleFallbackLogin = () => {
-    // Si Google no carga, mostrar mensaje o abrir popup manual
-    if (window.google) {
-      window.google.accounts.id.prompt();
-    } else {
-      setError('Error cargando Google Sign-In. Por favor recarga la página.');
-    }
-  };
+  // Fallback eliminado: dejamos solo el botón nativo de Google (GSI)
 
   const handleTraditionalLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,16 +138,10 @@ const Login: React.FC = () => {
   return (
     <div className="login-bg">
       <div className="login-card">
-        <div className="login-logo-group">
-          <img
-            src="/logo-thesia.png"
-            alt="Thesia Logo"
-            className="login-logo"
-          />
+        <div className="login-header">
+          <img src="/logo-thesia.png" alt="Thesia Logo" className="login-logo" />
+          <p className="login-desc">Gestor de Tesis y PreTesis - TECSUP Centro</p>
         </div>
-        <p className="login-desc">
-          Gestor de Tesis y PreTesis - TECSUP Centro
-        </p>
 
         {/* Estado de carga */}
         {isLoading && (
@@ -172,16 +159,15 @@ const Login: React.FC = () => {
           </div>
         )}
 
-        {/* NUEVO: Separación visual y títulos */}
         <div className="login-section">
           <h3 className="login-title">Acceso para Asesores</h3>
-          <form onSubmit={handleTraditionalLogin} style={{ marginBottom: '16px', marginTop: '8px' }}>
+          <form onSubmit={handleTraditionalLogin} className="login-form">
             <input
               type="email"
               placeholder="Correo institucional"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              style={{ width: '90%', padding: '8px', marginBottom: '8px', borderRadius: '6px', border: '1px solid #dadce0' }}
+              className="login-input"
               required
             />
             <input
@@ -189,49 +175,28 @@ const Login: React.FC = () => {
               placeholder="Contraseña"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              style={{ width: '90%', padding: '8px', marginBottom: '8px', borderRadius: '6px', border: '1px solid #dadce0' }}
+              className="login-input"
               required
             />
-            <button
-              type="submit"
-              style={{ width: '95%', padding: '10px', borderRadius: '6px', background: '#1976d2', color: '#fff', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
-              disabled={isLoading}
-            >
+            <button type="submit" className="login-submit" disabled={isLoading}>
               Ingresar como Asesor
             </button>
           </form>
         </div>
 
-        <div className="login-divider">
-          <span>O</span>
-        </div>
+  <div className="login-divider"><span>O</span></div>
 
         <div className="login-section">
           <h3 className="login-title">Acceso para Alumnos</h3>
-          {/* Botón de Google (será reemplazado por el componente de Google) */}
-          <div 
-            id="google-login-button"
-            className="login-google-btn"
-            onClick={!window.google ? handleFallbackLogin : undefined}
-            style={{
-              display: isLoading ? 'none' : 'flex'
-            }}
-          >
-            <img
-              src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg"
-              alt="Google"
-              className="login-google-icon"
-            />
-            Continuar con Gmail
-          </div>
+          {/* Contenedor vacío para que Google GSI renderice su botón por defecto */}
+          <div id="google-login-button" className="login-google-btn" style={{ display: isLoading ? 'none' : undefined }} />
         </div>
 
-        {/* Info adicional */}
         <div className="login-info">
           <small>🔒 Solo cuentas @tecsup.edu.pe</small>
         </div>
       </div>
-      
+
       <style>{`
         .login-bg {
           min-height: 100vh;
@@ -240,185 +205,45 @@ const Login: React.FC = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 20px;
+          padding: 24px;
         }
         .login-card {
           background: #fff;
           border-radius: 20px;
           box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-          padding: 0;
-          width: 380px;
-          min-height: 480px;
+          padding: 24px 24px 20px;
+          width: 420px;
           text-align: center;
           position: relative;
-          overflow: hidden;
         }
-        .login-logo-group {
-          position: absolute;
-          top: 30px;
-          left: 50%;
-          transform: translateX(-50%);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-        .login-logo {
-          width: 100px;
-          height: 100px;
-        }
-        .login-desc {
-          position: absolute;
-          top: 140px;
-          left: 50%;
-          transform: translateX(-50%);
-          color: #666;
-          font-size: 14px;
-          line-height: 1.4;
-          white-space: nowrap;
-          margin: 0;
-        }
-        .login-section {
-          margin-top: 170px;
-          margin-bottom: 0;
-          padding: 0 24px;
-        }
-        .login-title {
-          font-size: 16px;
-          font-weight: 600;
-          color: #1976d2;
-          margin-bottom: 8px;
-          margin-top: 0;
-        }
-        .login-divider {
-          width: 100%;
-          text-align: center;
-          margin: 12px 0 0 0;
-        }
-        .login-divider span {
-          background: #fff;
-          color: #888;
-          padding: 2px 12px;
-          border-radius: 12px;
-          font-size: 13px;
-          font-weight: 500;
-          border: 1px solid #eee;
-        }
-        .login-google-btn {
-          margin-top: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 12px;
-          border: 1px solid #dadce0;
-          border-radius: 6px;
-          padding: 12px 24px;
-          background: #fff;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 500;
-          color: #3c4043;
-          transition: all 0.2s;
-          width: 300px;
-          height: 48px;
-        }
-        .login-google-btn:hover {
-          box-shadow: 0 2px 8px rgba(60,64,67,.2);
-          background: #f8f9fa;
-        }
-        .login-google-icon {
-          width: 20px;
-          height: 20px;
-        }
-        .login-info {
-          position: absolute;
-          bottom: 40px;
-          left: 50%;
-          transform: translateX(-50%);
-          font-size: 11px;
-          color: #666;
-        }
-        .loading-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(255, 255, 255, 0.95);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          z-index: 10;
-        }
-        .loading-spinner {
-          border: 3px solid #f3f3f3;
-          border-top: 3px solid #1976d2;
-          border-radius: 50%;
-          width: 30px;
-          height: 30px;
-          animation: spin 1s linear infinite;
-          margin-bottom: 10px;
-        }
-        .error-message {
-          position: absolute;
-          top: 170px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: #fee2e2;
-          border: 1px solid #ef4444;
-          color: #dc2626;
-          padding: 8px 12px;
-          border-radius: 6px;
-          font-size: 12px;
-          max-width: 280px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-          z-index: 5;
-        }
-        .close-error {
-          background: none;
-          border: none;
-          color: #dc2626;
-          cursor: pointer;
-          font-size: 16px;
-          font-weight: bold;
-          padding: 0;
-          width: 20px;
-          height: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
+    .login-header { display:flex; flex-direction:column; align-items:center; gap:8px; margin-bottom: 12px; }
+  .login-logo { width: 140px !important; height: 140px !important; }
+        .login-desc { color: #6b7280; font-size: 13px; margin: 0 0 8px; }
+
+        .login-section { margin-top: 10px; }
+        .login-title { font-size: 15px; font-weight: 700; color: #1976d2; margin: 0 0 8px; }
+        .login-form { display:flex; flex-direction:column; gap:10px; align-items:center; }
+        .login-input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #dadce0; font-size: 14px; }
+        .login-submit { width: 100%; padding: 10px 12px; border-radius: 8px; background: #1976d2; color: #fff; font-weight: 700; border: none; cursor: pointer; }
+        .login-submit:disabled { opacity: .7; cursor: not-allowed; }
+
+        .login-divider { width:100%; display:flex; align-items:center; justify-content:center; margin: 12px 0; }
+        .login-divider span { background:#fff; color:#888; padding: 2px 12px; border-radius: 12px; font-size: 13px; font-weight: 500; border: 1px solid #eee; }
+
+        .login-google-btn { margin-top: 8px; display: inline-flex; width: auto; height: auto; padding: 0; border: none; background: transparent; box-shadow: none; }
+
+        .login-info { margin-top: 12px; font-size: 11px; color: #6b7280; }
+
+        .loading-overlay { position:absolute; inset:0; background: rgba(255,255,255,.95); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10; }
+        .loading-spinner { border: 3px solid #f3f3f3; border-top:3px solid #1976d2; border-radius:50%; width:30px; height:30px; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+
+        .error-message { background:#fee2e2; border:1px solid #ef4444; color:#dc2626; padding:8px 12px; border-radius:6px; font-size:12px; display:flex; align-items:center; justify-content:space-between; gap:8px; margin: 6px 0; }
+        .close-error { background:none; border:none; color:#dc2626; cursor:pointer; font-size:16px; font-weight:bold; padding:0; width:20px; height:20px; display:flex; align-items:center; justify-content:center; }
+
         @media (max-width: 600px) {
-          .login-card {
-            width: 90vw;
-            min-height: 520px;
-          }
-          .login-logo {
-            width: 80px;
-            height: 80px;
-          }
-          .login-desc {
-            font-size: 13px;
-            top: 150px;
-          }
-          .login-section {
-            margin-top: 150px;
-            padding: 0 8px;
-          }
-          .login-google-btn {
-            width: 240px;
-          }
-          .error-message {
-            max-width: 250px;
-            top: 180px;
-          }
+          .login-card { width: 92vw; padding: 20px 16px; }
+          .login-logo { width: 110px !important; height: 110px !important; }
         }
       `}</style>
     </div>

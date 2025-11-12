@@ -16,7 +16,7 @@ export const dashboardStyles = `
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     position: relative;
     overflow-x: hidden;
-    background: #f5f5f5; /* Fondo consistente */
+    background: #ffffff; /* Fondo cambiado a blanco para uniformidad */
   }
 
   /* Unificamos el layout con el resto de vistas: usamos margin-left en lugar de padding en el contenedor */

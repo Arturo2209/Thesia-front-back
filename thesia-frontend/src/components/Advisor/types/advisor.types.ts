@@ -24,7 +24,7 @@ export interface AdvisorDashboardData {
   documentosPorRevisar: number;
 }
   
-  export type TabType = 'perfil' | 'comunicacion' | 'horarios';
+  export type TabType = 'perfil' | 'comunicacion';
   
   export interface AdvisorStats {
     current_students: number;

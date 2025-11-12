@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Notification } from '../../../types/api.types';
+import type { Notification } from '../types/notifications.types';
 import './NotificationsList.styles.css';
 
 interface NotificationsListProps {
@@ -25,27 +25,33 @@ const NotificationsList: React.FC<NotificationsListProps> = ({
         <p>No hay notificaciones disponibles.</p>
       ) : (
         <ul className="notifications-list">
-          {notifications.map((notification) => (
-            <li key={notification.id} className="notification-item">
+          {notifications.map((n) => (
+            <li
+              key={n.id}
+              className={`notification-item ${n.isRead ? 'read' : 'unread'}`}
+              style={{ borderLeft: `3px solid ${n.color || '#e0e0e0'}` }}
+            >
               <div className="notification-header">
-                <span className="notification-icon">📄</span>
-                <span className="notification-title">{notification.type}</span>
+                <span className="notification-icon">{n.icon || '�'}</span>
+                <span className="notification-title">{n.type}</span>
+                <span className="notification-time">{n.timeAgo}</span>
               </div>
               <div className="notification-body">
-                <p className="notification-message">{notification.message}</p>
-                <span className="notification-time">{notification.timeAgo}</span>
+                <p className="notification-message">{n.message}</p>
               </div>
               <div className="notification-actions">
-                <button
-                  className="mark-read-button"
-                  onClick={() => onMarkAsRead(notification.id)}
-                  title="Marcar como leída"
-                >
-                  ✅ Marcar como leída
-                </button>
+                {!n.isRead && (
+                  <button
+                    className="mark-read-button"
+                    onClick={() => onMarkAsRead(n.id)}
+                    title="Marcar como leída"
+                  >
+                    ✅ Marcar como leída
+                  </button>
+                )}
                 <button
                   className="delete-button"
-                  onClick={() => onDelete(notification.id)}
+                  onClick={() => onDelete(n.id)}
                   title="Eliminar notificación"
                 >
                   🗑️ Eliminar

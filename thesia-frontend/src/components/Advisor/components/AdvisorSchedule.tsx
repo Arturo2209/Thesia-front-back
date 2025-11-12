@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Advisor } from '../types/advisor.types';
 import { advisorScheduleStyles } from '../styles/AdvisorSchedule.styles';
+import Modal from '../../Shared/Modal';
 
 // 📋 TIPOS PARA HORARIOS
 interface TimeSlot {
@@ -26,23 +27,16 @@ const AdvisorSchedule: React.FC<AdvisorScheduleProps> = ({ advisor }) => {
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmSlot, setConfirmSlot] = useState<TimeSlot | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [modalidad, setModalidad] = useState<'presencial' | 'virtual' | 'mixto' | ''>('');
+  const [agendaText, setAgendaText] = useState('Reunión de seguimiento de tesis');
+  const todayIso = new Date().toISOString().split('T')[0];
+  const navBtnStyle: React.CSSProperties = { padding: '8px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' };
+  const badgeStyle: React.CSSProperties = { background:'#e0f2fe', color:'#0369a1', padding:'6px 10px', borderRadius:9999, fontWeight:700, fontSize:12 };
 
-  // 🗓️ Días de la semana en español
-  const dayNames: { [key: string]: string } = {
-    'lunes': 'Lunes',
-    'martes': 'Martes', 
-    'miercoles': 'Miércoles',
-    'jueves': 'Jueves',
-    'viernes': 'Viernes',
-    'sabado': 'Sábado'
-  };
-
-  // 🎨 Colores por modalidad
-  const modalityColors: { [key: string]: string } = {
-    'presencial': '#3b82f6',
-    'virtual': '#10b981', 
-    'mixto': '#8b5cf6'
-  };
+  // (Eliminado el grid semanal; ya no se usan dayNames/modalityColors)
 
   // 🔄 Cargar horarios del asesor
   useEffect(() => {
@@ -64,6 +58,14 @@ const AdvisorSchedule: React.FC<AdvisorScheduleProps> = ({ advisor }) => {
         if (data.success) {
           setSchedule(data.availability);
           console.log('✅ Horarios cargados:', data.availability);
+          // Auto-seleccionar HOY y precargar sus horarios disponibles
+          try {
+            if (!selectedDate) {
+              const todayIso = new Date().toISOString().split('T')[0];
+              setSelectedDate(todayIso);
+              await loadSlotsForDate(todayIso);
+            }
+          } catch (e) { console.warn('No se pudo preseleccionar la fecha de hoy', e); }
         } else {
           setError(data.message || 'Error cargando horarios');
         }
@@ -110,11 +112,16 @@ const AdvisorSchedule: React.FC<AdvisorScheduleProps> = ({ advisor }) => {
     }
   };
 
-  // 📝 Manejar reserva de slot
-  const handleReserveSlot = async (slot: TimeSlot) => {
+  // 📝 Abrir confirmación antes de reservar
+  const handleOpenConfirm = (slot: TimeSlot) => {
+    setConfirmSlot(slot);
+  };
+
+  // ✅ Confirmar y enviar solicitud
+  const handleConfirmReserve = async () => {
+    if (!confirmSlot) return;
     try {
-      setLoading(true);
-      
+      setSubmitting(true);
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:3001/api/schedules/advisor/${advisor.id}/reserve`, {
         method: 'POST',
@@ -124,41 +131,28 @@ const AdvisorSchedule: React.FC<AdvisorScheduleProps> = ({ advisor }) => {
         },
         body: JSON.stringify({
           fecha: selectedDate,
-          hora_inicio: slot.hora_inicio,
-          hora_fin: slot.hora_fin,  // 🔧 ESTA LÍNEA FALTABA!
-          modalidad: slot.modalidad,
-          agenda: 'Reunión de seguimiento de tesis'
+          hora_inicio: confirmSlot.hora_inicio,
+          hora_fin: confirmSlot.hora_fin,
+          modalidad: modalidad || confirmSlot.modalidad,
+          agenda: agendaText
         })
       });
-  
+
       const data = await response.json();
-  
       if (data.success) {
-        // ✅ FEEDBACK MEJORADO
-        alert(`✅ ¡Solicitud enviada exitosamente!
-  
-  📅 Fecha: ${selectedDate}
-  ⏰ Hora: ${slot.hora_inicio} - ${slot.hora_fin}  
-  🎯 Modalidad: ${slot.modalidad}
-  ${slot.ubicacion ? `📍 Ubicación: ${slot.ubicacion}` : ''}
-  
-  ℹ️ Estado: PENDIENTE DE APROBACIÓN
-  🔔 El asesor ${advisor.name} recibirá una notificación
-  📱 Te notificaremos cuando responda
-  
-  💡 Tip: Puedes revisar el estado en la sección "Mis Reuniones"`);
-        
-        // Recargar slots para mostrar que ya no está disponible
+        setResult({ type: 'success', message: '¡Solicitud enviada exitosamente!' });
+        setModalidad('');
+        // refrescar disponibles
         loadSlotsForDate(selectedDate);
       } else {
-        alert(`❌ Error al enviar solicitud: ${data.message}`);
+        setResult({ type: 'error', message: data.message || 'Error al enviar solicitud' });
       }
-  
-    } catch (error) {
-      console.error('❌ Error reservando slot:', error);
-      alert('❌ Error de conexión al enviar la solicitud de reunión');
+    } catch (err) {
+      console.error('❌ Error reservando slot:', err);
+      setResult({ type: 'error', message: 'Error de conexión al enviar la solicitud de reunión' });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
+      setConfirmSlot(null);
     }
   };
 
@@ -170,6 +164,18 @@ const AdvisorSchedule: React.FC<AdvisorScheduleProps> = ({ advisor }) => {
     if (date) {
       loadSlotsForDate(date);
     }
+  };
+
+  // ⏮⏭ Navegación por días
+  const navigateDay = (offset: number) => {
+    if (!selectedDate) return;
+    const current = new Date(selectedDate + 'T00:00:00');
+    current.setDate(current.getDate() + offset);
+    const nextIso = current.toISOString().split('T')[0];
+    // Respetar límites min/max
+    if (nextIso < getMinDate() || nextIso > getMaxDate()) return;
+    setSelectedDate(nextIso);
+    loadSlotsForDate(nextIso);
   };
 
   // 🎯 Formatear hora
@@ -215,79 +221,38 @@ const AdvisorSchedule: React.FC<AdvisorScheduleProps> = ({ advisor }) => {
         </div>
       )}
 
-      {/* === HORARIOS GENERALES === */}
-      <div className="general-schedule">
-        <h4>🗓️ Disponibilidad Semanal</h4>
-        
-        {Object.keys(schedule).length === 0 ? (
-          <div className="no-schedule">
-            <p>📭 El asesor no tiene horarios configurados</p>
-          </div>
-        ) : (
-          <div className="schedule-grid">
-            {Object.entries(schedule).map(([day, slots]) => (
-              <div key={day} className="day-schedule">
-                <h5 className="day-name">{dayNames[day]}</h5>
-                <div className="time-slots">
-                  {slots.map((slot, index) => (
-                    <div 
-                      key={index} 
-                      className="time-slot"
-                      style={{ 
-                        borderLeft: `4px solid ${modalityColors[slot.modalidad]}` 
-                      }}
-                    >
-                      <div className="slot-time">
-                        {formatTime(slot.hora_inicio)} - {formatTime(slot.hora_fin)}
-                      </div>
-                      <div className="slot-info">
-                        <span 
-                          className={`modalidad-badge modalidad-${slot.modalidad}`}
-                          style={{ 
-                            backgroundColor: modalityColors[slot.modalidad] 
-                          }}
-                        >
-                          {slot.modalidad === 'presencial' && '🏢'}
-                          {slot.modalidad === 'virtual' && '💻'}
-                          {slot.modalidad === 'mixto' && '🔄'}
-                          {slot.modalidad}
-                        </span>
-                        {slot.ubicacion && (
-                          <div className="slot-location">
-                            📍 {slot.ubicacion}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* === SELECTOR DE FECHA === */}
+      {/* === AGENDAR REUNIÓN (simplificado, sin grid semanal) === */}
       {Object.keys(schedule).length > 0 && (
         <div className="date-selector">
           <h4>📆 Agendar Reunión</h4>
           <div className="date-input-container">
-            <label htmlFor="meeting-date">Selecciona una fecha:</label>
-            <input
-              id="meeting-date"
-              type="date"
-              value={selectedDate}
-              onChange={handleDateChange}
-              min={getMinDate()}
-              max={getMaxDate()}
-              className="date-input"
-            />
+            <label htmlFor="meeting-date" style={{ fontWeight: 600 }}>Selecciona una fecha:</label>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => navigateDay(-1)} disabled={!selectedDate || selectedDate <= getMinDate()} style={navBtnStyle}>◀</button>
+              <input
+                id="meeting-date"
+                type="date"
+                value={selectedDate}
+                onChange={handleDateChange}
+                min={getMinDate()}
+                max={getMaxDate()}
+                className="date-input"
+                style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1' }}
+              />
+              <button type="button" onClick={() => navigateDay(1)} disabled={!selectedDate || selectedDate >= getMaxDate()} style={navBtnStyle}>▶</button>
+              {selectedDate === todayIso && (
+                <span style={badgeStyle}>Hoy</span>
+              )}
+            </div>
+            {selectedDate !== todayIso && (
+              <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>Hoy es {todayIso}. Estás viendo {selectedDate}.</div>
+            )}
           </div>
 
           {/* === SLOTS DISPONIBLES PARA LA FECHA === */}
           {selectedDate && (
             <div className="available-slots">
-              <h5>⏰ Horarios Disponibles - {selectedDate}</h5>
+              <h5>⏰ Horarios disponibles para {selectedDate}</h5>
               
               {loading ? (
                 <div className="loading-slots">
@@ -302,11 +267,12 @@ const AdvisorSchedule: React.FC<AdvisorScheduleProps> = ({ advisor }) => {
               ) : (
                 <div className="slots-grid">
                   {availableSlots.map((slot, index) => (
-                    <button 
-                      key={index} 
+                    <button
+                      key={index}
                       className="slot-button"
-                      onClick={() => handleReserveSlot(slot)}
+                      onClick={() => handleOpenConfirm(slot)}
                       disabled={loading}
+                      title={`Modalidad: ${slot.modalidad}${slot.ubicacion ? ' | Ubicación: '+slot.ubicacion : ''}`}
                     >
                       <div className="slot-time-btn">
                         {formatTime(slot.hora_inicio)} - {formatTime(slot.hora_fin)}
@@ -332,6 +298,83 @@ const AdvisorSchedule: React.FC<AdvisorScheduleProps> = ({ advisor }) => {
       )}
 
       <style>{advisorScheduleStyles}</style>
+
+      {/* Modal de confirmación */}
+      <Modal
+        isOpen={!!confirmSlot}
+        title="Confirmar solicitud de reunión"
+        onClose={() => setConfirmSlot(null)}
+        actions={[
+          { label: 'Cancelar', onClick: () => setConfirmSlot(null), variant: 'secondary', disabled: submitting },
+          { label: submitting ? 'Enviando…' : 'Confirmar', onClick: handleConfirmReserve, variant: 'primary', disabled: submitting }
+        ]}
+      >
+        {confirmSlot && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>📅 <strong>Fecha:</strong> {selectedDate}</div>
+              <div>⏰ <strong>Hora:</strong> {formatTime(confirmSlot.hora_inicio)} - {formatTime(confirmSlot.hora_fin)}</div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ fontWeight: 600, display: 'block', marginBottom: 6 }}>Modalidad:</label>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {['presencial','virtual','mixto'].map(m => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setModalidad(m as any)}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: 10,
+                        border: modalidad === m ? '2px solid #3b82f6' : '1px solid #cbd5e1',
+                        background: modalidad === m ? '#eff6ff' : '#fff',
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        fontWeight: 500
+                      }}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ fontWeight: 600, display: 'block', marginBottom: 6 }}>Agenda / motivo:</label>
+                <textarea
+                  value={agendaText}
+                  onChange={e => setAgendaText(e.target.value)}
+                  rows={3}
+                  style={{ width: '100%', resize: 'vertical', padding: '10px 12px', borderRadius: 10, border: '1px solid #cbd5e1', fontSize: 13 }}
+                  placeholder="Describe brevemente el objetivo de la reunión"
+                />
+              </div>
+            </div>
+            <div style={{ color: '#64748b', fontSize: 13 }}>
+              Se enviará una solicitud a {advisor.name}. Si eliges presencial el asesor añadirá la ubicación al aprobar; si es virtual añadirá el enlace.
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal de resultado */}
+      <Modal
+        isOpen={!!result}
+        title={result?.type === 'success' ? 'Solicitud enviada' : 'No se pudo enviar'}
+        onClose={() => setResult(null)}
+        actions={[{ label: 'Aceptar', onClick: () => setResult(null), variant: 'primary' }]}
+      >
+        {result && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ color: result.type === 'success' ? '#16a34a' : '#dc2626', fontWeight: 600 }}>
+              {result.message}
+            </div>
+            {result.type === 'success' && confirmSlot == null && (
+              <div style={{ color: '#475569' }}>
+                Puedes revisar el estado en la pestaña «Mis reuniones».
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

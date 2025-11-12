@@ -3,9 +3,14 @@ export const chatStyles = `
   .chat-container {
     display: flex;
     flex-direction: column;
-    height: 500px;
+    width: 100%;
+    box-sizing: border-box;
+    /* Altura fija para evitar cambios al alternar pestañas */
+    height: 700px;
+    min-height: 700px;
+    max-height: 700px;
     background: white;
-    border-radius: 8px;
+    border-radius: 12px;
     border: 1px solid #e5e7eb;
     overflow: hidden;
   }
@@ -67,10 +72,10 @@ export const chatStyles = `
   .messages-container {
     flex: 1;
     overflow-y: auto;
-    padding: 16px;
+    padding: 20px 24px; /* Más aire horizontal */
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
     scroll-behavior: smooth;
   }
 
@@ -103,11 +108,11 @@ export const chatStyles = `
   }
 
   .message-bubble {
-    max-width: 70%;
-    padding: 12px 16px;
+    max-width: 82%; /* Más ancho por línea */
+    padding: 14px 18px;
     border-radius: 18px;
-    font-size: 14px;
-    line-height: 1.4;
+    font-size: 15px;
+    line-height: 1.5;
     word-wrap: break-word;
     position: relative;
   }
@@ -153,26 +158,26 @@ export const chatStyles = `
   /* === CHAT INPUT === */
   .chat-input-container {
     display: flex;
-    align-items: center;
-    padding: 16px 20px;
+    align-items: flex-end; /* Alinear con base de textarea */
+    padding: 18px 24px;
     background: #fafafa;
     border-top: 1px solid #e5e7eb;
-    gap: 12px;
+    gap: 14px;
   }
 
   .chat-input {
     flex: 1;
-    padding: 12px 16px;
+    padding: 14px 18px;
     border: 1px solid #d1d5db;
-    border-radius: 24px;
-    font-size: 14px;
+    border-radius: 20px;
+    font-size: 15px;
     outline: none;
     resize: none;
-    min-height: 20px;
-    max-height: 100px;
+    min-height: 44px; /* Más alto para mejor escritura */
+    max-height: 160px;
     overflow-y: auto;
     background: white;
-    color: #374151;        /* 🔧 AGREGAR ESTA LÍNEA */
+    color: #374151;
     font-family: inherit;
   }
 
@@ -233,10 +238,10 @@ export const chatStyles = `
   /* === QUICK ACTIONS === */
   .quick-actions {
     display: flex;
-    gap: 8px;
-    padding: 12px 20px;           /* 🔧 AGREGAR padding */
-    background: white;            /* 🔧 AGREGAR fondo */
-    border-bottom: 1px solid #f1f5f9;  /* 🔧 AGREGAR separador */
+    gap: 10px;
+    padding: 14px 24px;
+    background: white;
+    border-bottom: 1px solid #f1f5f9;
     flex-wrap: wrap;
   }
 
@@ -322,9 +327,19 @@ export const chatStyles = `
   }
 
   /* === RESPONSIVE === */
+  @media (max-width: 1024px) {
+    .chat-container {
+      height: 640px;
+      min-height: 640px;
+      max-height: 640px;
+    }
+  }
+
   @media (max-width: 768px) {
     .chat-container {
-      height: 400px;
+      height: 560px;
+      min-height: 560px;
+      max-height: 560px;
     }
     
     .message-bubble {
@@ -352,7 +367,9 @@ export const chatStyles = `
 
   @media (max-width: 480px) {
     .chat-container {
-      height: 350px;
+      height: 520px;
+      min-height: 520px;
+      max-height: 520px;
     }
     
     .message-bubble {

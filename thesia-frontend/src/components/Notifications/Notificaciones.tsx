@@ -1,81 +1,38 @@
-import React, { useState } from 'react';
+// Simplified notifications page for student role: minimal header + grouped list
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../Layout/Sidebar';
 import authService from '../../services/authService';
 import { useNotifications } from './hooks/useNotifications';
 import NotificationsList from './components/NotificationsList';
-import NotificationFilters from './components/NotificationFilters';
 import { notificationsStyles } from './styles/Notifications.styles';
 
 const Notificaciones: React.FC = () => {
   const navigate = useNavigate();
-  const [showFilters, setShowFilters] = useState(false);
-
   const {
     notifications,
     loading,
     error,
     unreadCount,
     hasMore,
-    filter,
-    notificationsByType,
-    notificationsByPriority,
-    totalCount,
     hasUnread,
     refresh,
     loadMore,
     markAsRead,
     markAllAsRead,
-    deleteNotification,
-    updateFilter
+    deleteNotification
   } = useNotifications();
 
   const handleLogout = async () => {
     try {
       await authService.logout();
       navigate('/', { replace: true });
-    } catch (error) {
-      console.error('❌ Error en logout:', error);
+    } catch (err) {
+      console.error('Error en logout:', err);
     }
   };
 
-  const handleRefresh = async () => {
-    try {
-      await refresh();
-    } catch (error) {
-      console.error('❌ Error refrescando:', error);
-    }
-  };
-
-  const toggleFilters = () => {
-    setShowFilters(!showFilters);
-  };
-
-  if (error) {
-    return (
-      <div className="notifications-container">
-        <Sidebar onLogout={handleLogout} />
-        <div className="main-content">
-          <header className="main-header">
-            <h1>Sistema de Tesis y Pretesis</h1>
-            <div className="notification-icon">🔔</div>
-          </header>
-
-          <div className="content-section">
-            <div className="error-container">
-              <div className="error-icon">❌</div>
-              <h2>Error cargando notificaciones</h2>
-              <p>{error}</p>
-              <button className="retry-button" onClick={handleRefresh}>
-                🔄 Intentar de nuevo
-              </button>
-            </div>
-          </div>
-        </div>
-        <style>{notificationsStyles}</style>
-      </div>
-    );
-  }
+  const handleRefresh = () => refresh();
 
   return (
     <div className="notifications-container">
@@ -83,110 +40,46 @@ const Notificaciones: React.FC = () => {
       <div className="main-content">
         <header className="main-header">
           <h1>Sistema de Tesis y Pretesis</h1>
-          <div className="notification-icon">🔔</div>
+          <div className="notification-icon" title="Notificaciones">🔔</div>
         </header>
 
         <div className="content-section">
           <div className="notifications-page-container">
-            <header className="notifications-secondary-header">
+            <header className="notifications-secondary-header" style={{ marginBottom: 12 }}>
               <div className="header-left">
                 <h2>
-                  🔔 Notificaciones
-                  {unreadCount > 0 && (
+                  🔔 Notificaciones {unreadCount > 0 && (
                     <span className="unread-badge">{unreadCount}</span>
                   )}
                 </h2>
-                <p className="header-subtitle">
-                  Mantente al día con tus actividades académicas
+                <p className="header-subtitle" style={{ marginTop: 4 }}>
+                  Últimas novedades de reuniones, documentos y tesis
                 </p>
               </div>
-
               <div className="header-actions">
-                <button
-                  className={`filter-toggle ${showFilters ? 'active' : ''}`}
-                  onClick={toggleFilters}
-                  title="Mostrar/ocultar filtros"
-                >
-                  🔍 Filtros
-                  {showFilters && <span className="toggle-indicator">×</span>}
-                </button>
-
                 <button
                   className="refresh-button"
                   onClick={handleRefresh}
                   disabled={loading}
-                  title="Refrescar notificaciones"
+                  title="Refrescar"
                 >
                   {loading ? '⏳' : '🔄'}
                 </button>
-
                 {hasUnread && (
                   <button
                     className="mark-all-button"
                     onClick={markAllAsRead}
                     title="Marcar todas como leídas"
                   >
-                    ✅ Marcar todas
+                    ✅ Todas
                   </button>
                 )}
               </div>
             </header>
 
-            <div className="quick-stats">
-              <div className="stat-card">
-                <span className="stat-icon">📋</span>
-                <div className="stat-details">
-                  <span className="stat-number">{totalCount}</span>
-                  <span className="stat-label">Total</span>
-                </div>
-              </div>
-
-              <div className="stat-card unread">
-                <span className="stat-icon">🔔</span>
-                <div className="stat-details">
-                  <span className="stat-number">{unreadCount}</span>
-                  <span className="stat-label">Sin leer</span>
-                </div>
-              </div>
-
-              <div className="stat-card read">
-                <span className="stat-icon">✅</span>
-                <div className="stat-details">
-                  <span className="stat-number">{totalCount - unreadCount}</span>
-                  <span className="stat-label">Leídas</span>
-                </div>
-              </div>
-
-              {Object.entries(notificationsByType).map(([type, count]) => (
-                <div className="stat-card" key={type}>
-                  <span className="stat-icon">{type}</span>
-                  <div className="stat-details">
-                    <span className="stat-number">{count}</span>
-                    <span className="stat-label">{type}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {showFilters && (
-              <div className="filters-panel">
-                <div className="filters-header">
-                  <h3>🔍 Filtrar notificaciones</h3>
-                  <button 
-                    className="close-filters"
-                    onClick={() => setShowFilters(false)}
-                  >
-                    ×
-                  </button>
-                </div>
-                <NotificationFilters
-                  filter={filter}
-                  onFilterChange={updateFilter}
-                  notificationsByType={notificationsByType}
-                  notificationsByPriority={notificationsByPriority}
-                  unreadCount={unreadCount}
-                  totalCount={totalCount}
-                />
+            {error && (
+              <div style={{ background:'#ffe5e5', border:'1px solid #fca5a5', padding:16, borderRadius:8, marginBottom:16 }}>
+                <strong style={{ color:'#b91c1c' }}>Error:</strong> {error}
               </div>
             )}
 
@@ -194,14 +87,13 @@ const Notificaciones: React.FC = () => {
               notifications={notifications}
               loading={loading}
               hasMore={hasMore}
-              onMarkAsRead={(id) => markAsRead(Number(id))}
-              onDelete={(id) => deleteNotification(Number(id))}
+              onMarkAsRead={markAsRead}
+              onDelete={deleteNotification}
               onLoadMore={loadMore}
             />
           </div>
         </div>
       </div>
-
       <style>{notificationsStyles}</style>
     </div>
   );

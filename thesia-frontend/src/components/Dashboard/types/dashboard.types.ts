@@ -6,8 +6,10 @@ export interface DashboardData {
     advisor: AdvisorInfo;
     activities: ActivityEvent[];
     guides: GuideInfo[];
-    pendingTasks: PendingTask[];
-    quickActions: QuickAction[];
+  pendingTasks?: PendingTask[]; // opcional en dashboard estudiante
+  quickActions: QuickAction[];
+  meetings?: MeetingsInfo;
+  recentNotifications?: RecentNotification[];
   }
   
   // 👤 INFORMACIÓN DEL USUARIO
@@ -32,6 +34,34 @@ export interface DashboardData {
     daysRemaining: number;
     nextDeadline?: string;
     status: 'no_thesis' | 'propuesta' | 'desarrollo' | 'revision' | 'sustentacion' | 'completed';
+  }
+
+  // 📅 INFORMACIÓN DE REUNIONES (resumen para dashboard)
+  export interface MeetingsInfo {
+    next?: NextMeeting;
+    pendingCount: number;
+    upcomingCount: number;
+  }
+
+  export interface NextMeeting {
+    id?: number;
+    date: string; // ISO date
+    time: string; // HH:mm
+    modality: 'presencial' | 'virtual' | 'mixto';
+    status: 'pendiente' | 'aceptada' | 'rechazada' | 'cancelada' | 'realizada';
+    location?: string;
+    link?: string;
+    advisorName?: string;
+  }
+
+  // 🔔 NOTIFICACIONES RECIENTES (compacto para dashboard)
+  export interface RecentNotification {
+    id: number;
+    icon: string;
+    message: string;
+    timeAgo: string;
+    isRead: boolean;
+    actionUrl?: string;
   }
   
   // 📂 INFORMACIÓN DE FASES

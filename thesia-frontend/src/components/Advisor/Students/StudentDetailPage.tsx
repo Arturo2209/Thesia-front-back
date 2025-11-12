@@ -142,6 +142,19 @@ const StudentDetailPage: React.FC = () => {
     );
   }
 
+  // Mapeo legible de fase (reusar lógica similar)
+  const phaseLabelMap: Record<string,string> = {
+    'fase_1_plan_proyecto': 'Fase 1 - Plan de proyecto',
+    'fase_2_diagnostico': 'Fase 2 - Diagnóstico',
+    'fase_3_marco_teorico': 'Fase 3 - Marco teórico',
+    'fase_4_desarrollo': 'Fase 4 - Desarrollo',
+    'fase_5_resultados': 'Fase 5 - Resultados',
+    'propuesta': 'Fase 1 - Plan de proyecto',
+    'desarrollo': 'Fase 2 - Diagnóstico',
+    'revision': 'Fase 3 - Marco teórico',
+    'sustentacion': 'Fase 4 - Desarrollo'
+  };
+  const phaseLabel = (student.currentPhase || student.phase) ? (phaseLabelMap[student.currentPhase || student.phase] || (student.currentPhase || student.phase).replace(/_/g,' ')) : 'Sin fase';
   return (
     <div className="asesor-container">
       <Sidebar onLogout={handleLogout} />
@@ -172,7 +185,7 @@ const StudentDetailPage: React.FC = () => {
                 <p className="advisor-title">{student.specialty || 'Estudiante'}</p>
                 <div className="advisor-stats">
                   <span className="rating">🎓 {student.thesisTitle || 'Tesis sin título'}</span>
-                  <span className="experience">Fase: {student.phase || 'N/D'}</span>
+                  <span className="experience">Fase actual: {phaseLabel}</span>
                   <span className="completed">Asignado: {student.assignedDate || 'N/D'}</span>
                 </div>
               </div>
@@ -224,7 +237,7 @@ const StudentDetailPage: React.FC = () => {
                         </div>
                         <div className="contact-item">
                           <span className="contact-icon">📄</span>
-                          <span>Fase actual: {student.phase || 'No definida'}</span>
+                          <span>Fase actual: {phaseLabel}</span>
                         </div>
                       </div>
                     </div>

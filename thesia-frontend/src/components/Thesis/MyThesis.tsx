@@ -687,9 +687,7 @@ const MyThesis: React.FC = () => {
         .main-content {
           flex: 1;
           margin-left: 280px; /* Ajustado al ancho del Sidebar */
-          padding: 32px;
-          background: #ffffff;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          background: #ffffff; /* Sin padding ni sombra para que el header quede pegado */
           overflow-y: auto;
         }
 

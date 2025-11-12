@@ -211,39 +211,66 @@ export const advisorService = {
     console.log('🔄 [AdvisorService] Obteniendo estudiantes asignados...');
 
     // Función de mapeo común (acepta varias formas del backend)
-    const mapRows = (rows: any[]): AdvisorStudent[] => rows.map((row: any) => ({
-      id: Number(row.id ?? row.student_id ?? row.id_usuario_estudiante),
-      name: row.name || [row.student_name, row.student_lastname].filter(Boolean).join(' ') || 'Sin nombre',
-      email: row.email || row.student_email || 'Sin correo',
-      specialty: row.specialty || row.especialidad || 'Sin especialidad',
-      thesisTitle: row.thesisTitle || row.thesis_title || 'Sin título',
-      phase: row.phase || row.phaseRaw || row.thesisPhaseActual || 'Sin fase',
-      assignedDate: row.assignedDate || row.assigned_date || null,
-    }));
+    const phaseLabelMap: Record<string, string> = {
+      'fase_1_plan_proyecto': 'Fase 1 - Plan de proyecto',
+      'fase_2_diagnostico': 'Fase 2 - Diagnóstico',
+      'fase_3_marco_teorico': 'Fase 3 - Marco teórico',
+      'fase_4_desarrollo': 'Fase 4 - Desarrollo',
+      'fase_5_resultados': 'Fase 5 - Resultados',
+      // fallback para fase_actual de tesis
+      'propuesta': 'Fase 1 - Plan de proyecto',
+      'desarrollo': 'Fase 2 - Diagnóstico',
+      'revision': 'Fase 3 - Marco teórico',
+      'sustentacion': 'Fase 4 - Desarrollo'
+    };
+    const label = (code?: string | null) => code ? (phaseLabelMap[code] || code.replace(/_/g,' ')) : 'Sin fase';
+    const mapRows = (rows: any[]): AdvisorStudent[] => rows.map((row: any) => {
+      // Preferir la mayor aprobada; luego la mayor enviada; luego derivadas; por último fase_actual de tesis
+      const phaseCode = row.highestSubmittedPhase
+        || row.highestApprovedPhase
+        || row.phaseRaw
+        || row.displayPhase
+        || row.phase
+        || row.thesisPhaseActual
+        || 'Sin fase';
+      try {
+        console.log('[AdvisorService] phase fields for row:', {
+          name: row.name,
+          highestApprovedPhase: row.highestApprovedPhase,
+          highestSubmittedPhase: row.highestSubmittedPhase,
+          phaseRaw: row.phaseRaw,
+          displayPhase: row.displayPhase,
+          phase: row.phase,
+          thesisPhaseActual: row.thesisPhaseActual,
+          chosen: phaseCode
+        });
+      } catch {}
+      return {
+        id: Number(row.id ?? row.student_id ?? row.id_usuario_estudiante),
+        name: row.name || [row.student_name, row.student_lastname].filter(Boolean).join(' ') || 'Sin nombre',
+        email: row.email || row.student_email || 'Sin correo',
+        specialty: row.specialty || row.especialidad || 'Sin especialidad',
+        thesisTitle: row.thesisTitle || row.thesis_title || 'Sin título',
+        phase: phaseCode,
+        currentPhase: row.currentPhase || phaseCode,
+        phaseLabel: label(row.currentPhase || phaseCode),
+        highestApprovedPhase: row.highestApprovedPhase || null,
+        highestSubmittedPhase: row.highestSubmittedPhase || null,
+        thesisPhaseActual: row.thesisPhaseActual || null,
+        assignedDate: row.assignedDate || row.assigned_date || null,
+      };
+    });
 
-    // 1) Intento principal: nueva ruta
+    // Usar únicamente la ruta enriquecida estable /advisor/students
     try {
-      const resNew = (await apiService.get('/advisors/assigned-students')) as any;
-      console.log('✅ [AdvisorService] Respuesta nueva ruta:', resNew);
-      const rowsNew = Array.isArray(resNew?.students) ? resNew.students : Array.isArray(resNew?.data) ? resNew.data : [];
-      const mappedNew = mapRows(rowsNew);
-      if (mappedNew.length > 0) return mappedNew;
-      console.warn('⚠️ [AdvisorService] Nueva ruta devolvió 0 estudiantes. Probando ruta legacy...');
-    } catch (e) {
-      console.warn('⚠️ [AdvisorService] Falla en nueva ruta, probaré legacy:', e);
-    }
-
-    // 2) Fallback: ruta legacy aún registrada bajo /api
-    try {
-      const resLegacy = (await apiService.get('/advisor/students')) as any;
-      console.log('✅ [AdvisorService] Respuesta ruta legacy:', resLegacy);
-      const rowsLegacy = Array.isArray(resLegacy?.students) ? resLegacy.students : Array.isArray(resLegacy?.data) ? resLegacy.data : [];
-      const mappedLegacy = mapRows(rowsLegacy);
-      return mappedLegacy;
-    } catch (e2) {
-      console.error('❌ [AdvisorService] Ambas rutas fallaron al obtener estudiantes:', e2);
-      // Propagar el error para que la UI pueda mostrar mensaje y no silencie con lista vacía
-      throw e2;
+      const res = (await apiService.get('/advisor/students')) as any;
+      console.log('✅ [AdvisorService] Respuesta /advisor/students (raw):', JSON.parse(JSON.stringify(res)));
+      const rows = Array.isArray(res?.students) ? res.students : Array.isArray(res?.data) ? res.data : [];
+      const mapped = mapRows(rows);
+      return mapped;
+    } catch (err) {
+      console.error('❌ [AdvisorService] Error obteniendo estudiantes asignados:', err);
+      throw err;
     }
   },
 

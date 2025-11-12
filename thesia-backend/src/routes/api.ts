@@ -93,7 +93,6 @@ router.get('/database/status', async (req, res) => {
       },
       timestamp: new Date().toISOString()
     });
-
   } catch (error) {
     console.error('❌ Error verificando BD:', error);
     
@@ -868,17 +867,73 @@ router.get('/advisor/students', verifyToken, requireRole(['asesor']), async (req
         order: [['fecha_subida', 'ASC']]
       });
 
-      const aprobados = documentos.filter(d => d.estado === 'aprobado');
-      let faseDerivada: string | null = null;
-      if (aprobados.length > 0) {
-        faseDerivada = aprobados[aprobados.length - 1].fase;
-      } else if (documentos.length > 0) {
-        faseDerivada = documentos[documentos.length - 1].fase;
-      }
+      // Calcular fase por jerarquía (última desbloqueada): mayor aprobada; si no hay, mayor enviada
+      const phaseOrder = [
+        'fase_1_plan_proyecto',
+        'fase_2_diagnostico',
+        'fase_3_marco_teorico',
+        'fase_4_desarrollo',
+        'fase_5_resultados'
+      ] as const;
+      const indexOf = (f: string) => phaseOrder.indexOf(f as any);
 
-      // Mapear fase derivada a representación frontend (mantener código si helper devuelve humano, para consistencia en TU UI que convierte a label)
+      // Filtrar fases inválidas o vacías (p. ej. '') que no están en phaseOrder
+      const hasValidPhase = (f: string | null | undefined) => !!f && indexOf(f as string) !== -1;
+      const ignoredPhases: string[] = [];
+
+      const allValidPhases = documentos
+        .map(d => d.fase as string)
+        .filter(f => {
+          const ok = hasValidPhase(f);
+          const raw = String(f ?? '');
+          if (!ok && (raw.trim() === '')) ignoredPhases.push(raw === '' ? '(empty)' : raw);
+          return ok;
+        })
+        .sort((a,b) => indexOf(a) - indexOf(b));
+
+      const approvedPhases = documentos
+        .filter(d => d.estado === 'aprobado' && hasValidPhase(d.fase))
+        .map(d => d.fase)
+        .sort((a,b) => indexOf(a) - indexOf(b));
+
+      const highestApproved = approvedPhases.length ? approvedPhases[approvedPhases.length - 1] : null;
+      const highestSubmitted = allValidPhases.length ? allValidPhases[allValidPhases.length - 1] : null;
+      const faseDerivada: string | null = highestApproved || highestSubmitted || null;
+
+      // Mapear fase derivada a representación frontend
       const faseFrontend = faseDerivada ? mapPhaseToFrontend(faseDerivada) : null;
 
+      // Definir la fase "actual" con progreso desbloqueado
+      const approvedIdx = highestApproved ? indexOf(highestApproved) : -1;
+      const submittedIdx = highestSubmitted ? indexOf(highestSubmitted) : -1;
+      const lastIdx = phaseOrder.length - 1;
+      let currentIdx: number;
+      if (submittedIdx >= 0 && submittedIdx >= approvedIdx + 1) {
+        currentIdx = submittedIdx;
+      } else if (approvedIdx >= 0) {
+        currentIdx = Math.min(approvedIdx + 1, lastIdx);
+      } else {
+        currentIdx = 0; // empezar en Fase 1
+      }
+      const currentPhase = phaseOrder[currentIdx] || highestSubmitted || highestApproved || faseDerivada || tesis.fase_actual || null;
+
+      // Log detallado por estudiante para diagnóstico
+      try {
+        console.log('🧩 Fases estudiante:', {
+          estudiante: estudiante ? `${estudiante.nombre} ${estudiante.apellido}` : tesis.id_usuario_estudiante,
+          tesisId: tesis.id_tesis,
+          allValidPhases,
+          approvedPhases,
+          highestApproved,
+          highestSubmitted,
+          faseDerivada,
+          approvedIdx,
+          submittedIdx,
+          currentIdx,
+          currentPhase,
+          ignoredPhases
+        });
+      } catch {}
       enriched.push({
         id: estudiante ? estudiante.id_usuario : tesis.id_usuario_estudiante,
         name: estudiante ? `${estudiante.nombre} ${estudiante.apellido}` : 'Desconocido',
@@ -886,12 +941,19 @@ router.get('/advisor/students', verifyToken, requireRole(['asesor']), async (req
         specialty: estudiante?.especialidad || 'Sin especialidad',
         thesisTitle: tesis.titulo || 'Sin título',
         thesisPhaseActual: tesis.fase_actual, // enum propuesta/desarrollo/revision/sustentacion
-        phaseRaw: faseDerivada,
-        phase: faseDerivada || tesis.fase_actual || null, // entregar código para que front lo formatee
-        derivedPhaseLabel: faseFrontend, // opcional para debug
+  phaseRaw: faseDerivada,
+  phase: currentPhase, // fase actual (mayor entregada o siguiente a la última aprobada)
+  displayPhase: currentPhase, // mantener compatibilidad
+  currentPhase: currentPhase,
+  highestApprovedPhase: highestApproved,
+  highestSubmittedPhase: highestSubmitted,
+  derivedPhaseLabel: faseFrontend, // opcional para debug
+  debugAllPhases: allValidPhases,
+  debugApprovedPhases: approvedPhases,
+  debugIgnoredPhases: ignoredPhases,
         assignedDate: tesis.fecha_creacion ? tesis.fecha_creacion.toISOString().substring(0,10) : null,
         documentsCount: documentos.length,
-        approvedCount: aprobados.length
+        approvedCount: approvedPhases.length
       });
     }
 

@@ -8,36 +8,27 @@ export const thesisEditFormStyles = `
   .main-content {
     flex: 1;
     margin-left: 280px; /* Ajuste para respetar el ancho del Sidebar */
-    padding: 32px;
-    max-width: calc(100vw - 280px); /* Ajuste dinámico para evitar espacio adicional */
-    background: #ffffff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    border-radius: 8px;
+    background: #ffffff; /* Sin padding ni sombra para que el header quede pegado */
   }
 
   @media (max-width: 1024px) {
     .main-content {
       margin-left: 260px;
-      max-width: calc(100vw - 260px);
-      padding: 24px;
     }
   }
 
   @media (max-width: 768px) {
     .main-content {
       margin-left: 0;
-      max-width: 100vw;
-      padding: 16px;
     }
   }
 
   .main-header {
-    background: white;
+    background: #ffffff;
     padding: 16px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     position: sticky;
     top: 0;
     z-index: 100;
