@@ -37,6 +37,7 @@ const FullWidthChat: React.FC<FullWidthChatProps> = ({ advisor }) => {
   const [socketStatus, setSocketStatus] = useState<'connected'|'connecting'|'disconnected'>('connecting');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const initialLoadDoneRef = useRef<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const lastMessageIdRef = useRef<number>(0);
@@ -70,7 +71,8 @@ const FullWidthChat: React.FC<FullWidthChatProps> = ({ advisor }) => {
         setError(e instanceof Error ? e.message : 'Error cargando conversación');
       } finally {
         setLoading(false);
-        scrollToBottom();
+        // Evitar auto-scroll al fondo en la primera carga
+        initialLoadDoneRef.current = true;
       }
     };
     load();
@@ -78,6 +80,8 @@ const FullWidthChat: React.FC<FullWidthChatProps> = ({ advisor }) => {
 
   // Scroll automático siempre que cambie la lista de mensajes
   useEffect(() => {
+    // No auto-scroll en el primer render; sólo en mensajes nuevos
+    if (!initialLoadDoneRef.current) return;
     scrollToBottom();
   }, [messages.length]);
 
@@ -219,46 +223,13 @@ const FullWidthChat: React.FC<FullWidthChatProps> = ({ advisor }) => {
 
   return (
     <div className="fwc-container">
-      {/* Top advisor summary (mirroring Perfil card hierarchy) */}
-      <div className="fwc-summary">
-        <div className="fwc-summary-left">
-          <div className="fwc-avatar">
-            {advisor.avatar_url ? (
-              <img src={advisor.avatar_url} alt={advisor.name} />
-            ) : (
-              getInitials(advisor.name)
-            )}
-          </div>
-          <div className="fwc-info">
-            <h3 className="fwc-name">{advisor.name}</h3>
-            <p className="fwc-title">{advisor.specialty}</p>
-            <div className="fwc-stats">
-              <span className="rating">⭐ 4.8/5.0</span>
-              <span>15 años de experiencia</span>
-              <span>45 tesis completadas</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Chat panel full width inside card */}
       <div className="fwc-card">
-        <div className="fwc-chat-header">
-          <div className="avatar-mini">
-            {advisor.avatar_url ? (
-              <img src={advisor.avatar_url} alt={advisor.name} />
-            ) : (
-              getInitials(advisor.name)
-            )}
-          </div>
-          <div className="peer">
-            <div className="peer-name">{advisor.name}</div>
-            <div className="peer-role">{advisor.specialty}</div>
-          </div>
-          <div className={`fwc-socket-status ${socketStatus}`} title={`Estado: ${socketStatus}`}>
-            {socketStatus === 'connected' && '🟢 Conectado'}
-            {socketStatus === 'connecting' && '🟡 Conectando...'}
-          </div>
+        {/* Encabezado removido para evitar repetición de datos */}
+        <div className={`fwc-socket-status ${socketStatus}`} title={`Estado: ${socketStatus}`} style={{ alignSelf: 'flex-end', marginBottom: 8 }}>
+          {socketStatus === 'connected' && '🟢 Conectado'}
+          {socketStatus === 'connecting' && '🟡 Conectando...'}
         </div>
         <div className="fwc-quick">
           <button onClick={() => handleSend('¡Hola profesor! Tengo una consulta sobre mi tesis.')}>❓ Consulta</button>

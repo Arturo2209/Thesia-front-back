@@ -2,6 +2,7 @@ export const fullChatStyles = `
   .fwc-container {
     width: 100%;
     padding: 24px; /* espacio simétrico a ambos lados */
+    padding-bottom: 0; /* evita hueco extra debajo del chat */
     box-sizing: border-box;
   }
 
@@ -33,6 +34,10 @@ export const fullChatStyles = `
     border-radius:12px;
     box-shadow: 0 6px 18px rgba(0,0,0,0.08);
     overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    height: calc(100vh - 140px); /* ocupa alto estable sin dejar hueco */
+    width: 100%;
   }
 
   .fwc-chat-header {
@@ -49,7 +54,7 @@ export const fullChatStyles = `
   .fwc-quick button { padding:8px 12px; background:#eff6ff; color:#3b82f6; border:1px solid #bfdbfe; border-radius:16px; font-size:12px; cursor:pointer; }
   .fwc-quick button:hover { background:#dbeafe; border-color:#93c5fd; }
 
-  .fwc-messages { height: 56vh; min-height: 440px; overflow-y:auto; padding: 20px 24px; background:#fff; }
+  .fwc-messages { flex:1; min-height: 0; overflow-y:auto; padding: 20px 24px; background:#fff; }
   .fwc-msg { display:flex; flex-direction: column; gap: 4px; margin-bottom:12px; }
   .fwc-msg.own { align-items:flex-end; }
   .fwc-msg.other { align-items:flex-start; }
@@ -77,15 +82,15 @@ export const fullChatStyles = `
   .fwc-attach:hover { background:#e5e7eb; }
 
   @media (max-width: 1024px) {
-    .fwc-messages { height: 52vh; }
+    .fwc-card { height: calc(100vh - 120px); }
   }
   @media (max-width: 768px) {
     .fwc-container { padding: 16px; }
-    .fwc-messages { height: 48vh; }
+    .fwc-card { height: calc(100vh - 110px); }
     .fwc-bubble { max-width: 90%; }
   }
   @media (max-width: 480px) {
-    .fwc-messages { height: 44vh; }
+    .fwc-card { height: calc(100vh - 100px); }
     .fwc-bubble { max-width: 94%; }
   }
 `;
