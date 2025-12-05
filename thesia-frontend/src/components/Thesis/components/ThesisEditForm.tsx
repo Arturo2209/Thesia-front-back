@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Advisor, FormData, ThesisData } from '../types/thesis.types';
 import { thesisEditFormStyles } from '../styles/ThesisEditForm.styles.ts';
+import StudentHeader from '../../Shared/StudentHeader';
 
 interface ThesisEditFormProps {
   formData: FormData;
@@ -30,10 +31,7 @@ const ThesisEditForm: React.FC<ThesisEditFormProps> = ({
   return (
     <>
       <div className="main-content">
-        <header className="main-header">
-          <h1>Sistema de Tesis y Pretesis</h1>
-          <div className="notification-icon">🔔</div>
-        </header>
+        <StudentHeader title="Sistema de Tesis y Pretesis" />
 
         <div className="content-section">
           <div className="thesis-edit-container">

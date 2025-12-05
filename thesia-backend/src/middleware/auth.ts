@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../config/auth';
 
 // Extender la interfaz Request para incluir user
 declare global {
@@ -43,8 +44,6 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       });
       return;
     }
-
-    const JWT_SECRET = process.env.JWT_SECRET || 'tu_jwt_secret_aqui';
 
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
       if (err) {

@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 // Usar el Sidebar propio del rol asesor (no el del estudiante)
 import Sidebar from '../Layout/Sidebar';
 import { miAsesorStyles } from '../styles/MiAsesor.styles';
-import Chat from '../components/Chat';
+import FullWidthChat from '../components/FullWidthChat';
 import advisorService from '../../../services/advisorService';
 import type { AdvisorStudent } from './types/student.types';
 import authService from '../../../services/authService';
@@ -247,7 +247,7 @@ const StudentDetailPage: React.FC = () => {
 
               {activeTab === 'comunicacion' && chatPeer && (
                 <div className="communication-content">
-                  <Chat advisor={chatPeer} />
+                  <FullWidthChat advisor={chatPeer} />
                 </div>
               )}
             </div>

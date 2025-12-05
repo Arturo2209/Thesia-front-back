@@ -2,6 +2,7 @@ import User from '../models/User';
 import LogActividad from '../models/LogActividad';
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { JWT_SECRET, JWT_EXPIRES_IN, JWT_ISSUER, JWT_AUDIENCE } from '../config/auth';
 
 export const login = async (req: Request, res: Response) => {
 	const { email, password } = req.body;
@@ -24,7 +25,7 @@ export const login = async (req: Request, res: Response) => {
 		console.log('✅ [LOGIN] Contraseña correcta, generando JWT...');
 			// Generar JWT con formato estándar (igual que Google)
 			const jwtPayload = user.toJWT();
-			const token = jwt.sign(jwtPayload, process.env.JWT_SECRET || 'thesia_secret', { expiresIn: '12h' });
+			const token = jwt.sign(jwtPayload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN, issuer: JWT_ISSUER, audience: JWT_AUDIENCE });
 			console.log('✅ [LOGIN] Login exitoso, JWT generado:', jwtPayload);
 
 			// Registrar actividad en la bitácora

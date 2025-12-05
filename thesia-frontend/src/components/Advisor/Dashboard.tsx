@@ -105,7 +105,41 @@ const AdvisorDashboard: React.FC = () => {
         <div className="content-section">
           <h1>Panel del Asesor</h1>
 
-          {!auxLoading ? (
+          {/* Resumen de métricas */}
+          <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, marginTop: 12 }}>
+            <StatCard
+              title="Estudiantes asignados"
+              value={data?.totalEstudiantes ?? '-'}
+              icon="👨‍🎓"
+              color="blue"
+            />
+            <StatCard
+              title="Reuniones pendientes"
+              value={data?.reunionesPendientes ?? pendingMeetings.length}
+              icon="📅"
+              color="orange"
+            />
+            <StatCard
+              title="Por revisar"
+              value={data?.documentosPorRevisar ?? pendingDocs.length}
+              icon="📄"
+              color="purple"
+            />
+            <StatCard
+              title="Mis guías"
+              value={myGuidesCount}
+              icon="📚"
+              color="green"
+            />
+          </div>
+
+          {error && (
+            <div style={{ marginTop: 12, padding: 12, borderRadius: 6, background: '#ffecec', color: '#b00020' }}>
+              Ocurrió un error cargando el dashboard: {error}
+            </div>
+          )}
+
+          {!auxLoading && !loading ? (
             <>
               {/* Acciones rápidas */}
               <div className="dashboard-card" style={{ marginTop: 16 }}>
@@ -271,7 +305,7 @@ const AdvisorDashboard: React.FC = () => {
                   {/* Notificaciones */}
                   <div className="dashboard-card">
                     <div className="card-header">
-                      <h3>Notificaciones</h3>
+                      <h3>Notificaciones {unreadCount > 0 ? `(${unreadCount} sin leer)` : ''}</h3>
                       <span className="card-icon">🔔</span>
                     </div>
                     <div className="card-content">

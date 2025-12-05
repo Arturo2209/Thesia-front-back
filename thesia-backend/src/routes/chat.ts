@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticateToken } from '../middleware/auth';
 import { getChatMessages, sendMessage } from '../controllers/chatController';
+import { chatUpload } from '../middleware/upload';
 
 const router = Router();
 
@@ -11,6 +12,7 @@ router.use(authenticateToken);
 router.get('/messages', getChatMessages);
 
 // POST /api/chat/send - Enviar mensaje
-router.post('/send', sendMessage);
+// soporta texto (JSON) y archivos (multipart/form-data)
+router.post('/send', chatUpload.single('file'), sendMessage);
 
 export default router;

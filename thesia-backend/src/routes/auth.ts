@@ -3,6 +3,7 @@ import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import { authenticateToken } from '../middleware/auth';
+import { JWT_SECRET, JWT_EXPIRES_IN, JWT_ISSUER, JWT_AUDIENCE } from '../config/auth';
 import { login } from '../controllers/authController';
 import sequelize from '../config/database';
 
@@ -85,7 +86,7 @@ router.post('/google/verify', async (req, res) => {
       await user.save();
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
+    const jwtSecret = JWT_SECRET;
     if (!jwtSecret) {
       throw new Error('JWT_SECRET no configurado');
     }
@@ -97,9 +98,9 @@ router.post('/google/verify', async (req, res) => {
       user.toJWT(),
       jwtSecret as string,
       {
-        expiresIn: process.env.JWT_EXPIRES_IN || '24h',
-        issuer: 'thesia-backend',
-        audience: 'thesia-frontend',
+        expiresIn: JWT_EXPIRES_IN,
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
       } as jwt.SignOptions
     );
 
@@ -134,7 +135,7 @@ router.post('/update-profile', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Token requerido' });
     }
     const token = authHeader.substring(7);
-    const jwtSecret = process.env.JWT_SECRET;
+    const jwtSecret = JWT_SECRET;
     if (!jwtSecret) {
       return res.status(500).json({ success: false, message: 'Error de configuración del servidor' });
     }
@@ -163,9 +164,9 @@ router.post('/update-profile', async (req, res) => {
       user.toJWT(),
       jwtSecret as string,
       {
-        expiresIn: process.env.JWT_EXPIRES_IN || '24h',
-        issuer: 'thesia-backend',
-        audience: 'thesia-frontend',
+        expiresIn: JWT_EXPIRES_IN,
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
       } as jwt.SignOptions
     );
     res.json({ success: true, message: 'Perfil actualizado exitosamente', user: user.toJWT(), token: newToken });

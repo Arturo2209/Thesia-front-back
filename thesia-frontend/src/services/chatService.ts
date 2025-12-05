@@ -31,6 +31,13 @@ const chatService = {
   sendMessage: async (recipientId: number, content: string): Promise<any> => {
     const resp = await apiService.post<any>('/chat/send', { recipientId, content });
     return resp;
+  },
+  sendFile: async (recipientId: number, file: File): Promise<any> => {
+    const form = new FormData();
+    form.append('recipientId', String(recipientId));
+    form.append('file', file);
+    const resp = await apiService.post<any>('/chat/send', form);
+    return resp;
   }
 };
 

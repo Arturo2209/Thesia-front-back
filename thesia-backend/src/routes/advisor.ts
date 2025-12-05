@@ -42,6 +42,8 @@ router.get('/documents', getPendingReview);
 
 // 1. Rutas sin parámetros (deben ir PRIMERO)
 router.get('/assigned-students', getAssignedStudents);
+// Alias solicitado por el frontend
+router.get('/students', getAssignedStudents);
 router.get('/meetings/requests', getPendingAdvisorMeetings);
 router.get('/progress/requests', getPendingAdvisorProgress);
 router.get('/requests', getPendingAdvisorRequests);

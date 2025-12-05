@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../Layout/Sidebar';
-import Chat from './Chat';
+import StudentHeader from '../../Shared/StudentHeader';
+// Nuevo chat de ancho completo para probar distribución y estilos
+import FullWidthChat from './FullWidthChat';
 // import AdvisorSchedule from './AdvisorSchedule';
 import type { TabType, Advisor } from '../types/advisor.types';
 // import StudentMeetingsList from './StudentMeetingsList';
@@ -104,10 +106,7 @@ const MiAsesor: React.FC = () => {
       <div className="asesor-container">
         <Sidebar onLogout={handleLogout} />
         <div className="main-content">
-          <header className="main-header">
-            <h1>Sistema de Tesis y Pretesis</h1>
-            <div className="notification-icon">🔔</div>
-          </header>
+          <StudentHeader title="Sistema de Tesis y Pretesis" />
           <div className="asesor-section">
             <div className="loading-container">
               <div className="spinner"></div>
@@ -126,10 +125,7 @@ const MiAsesor: React.FC = () => {
       <div className="asesor-container">
         <Sidebar onLogout={handleLogout} />
         <div className="main-content">
-          <header className="main-header">
-            <h1>Sistema de Tesis y Pretesis</h1>
-            <div className="notification-icon">🔔</div>
-          </header>
+          <StudentHeader title="Sistema de Tesis y Pretesis" />
           <div className="asesor-section">
             <div className="error-container">
               <div className="error-icon">❌</div>
@@ -151,10 +147,7 @@ const MiAsesor: React.FC = () => {
       <div className="asesor-container">
         <Sidebar onLogout={handleLogout} />
         <div className="main-content">
-          <header className="main-header">
-            <h1>Sistema de Tesis y Pretesis</h1>
-            <div className="notification-icon">🔔</div>
-          </header>
+          <StudentHeader title="Sistema de Tesis y Pretesis" />
           <div className="asesor-section">
             <div className="asesor-header">
               <h2>Mi Asesor</h2>
@@ -179,12 +172,9 @@ const MiAsesor: React.FC = () => {
       
       <div className="main-content">
         {/* HEADER */}
-        <header className="main-header">
-          <h1>Sistema de Tesis y Pretesis</h1>
-          <div className="notification-icon">🔔</div>
-        </header>
+        <StudentHeader title="Sistema de Tesis y Pretesis" />
 
-        <div className="asesor-section">
+        <div className={`asesor-section ${activeTab === 'comunicacion' ? 'wide' : ''}`}>
           {/* HEADER */}
           <div className="asesor-header">
             <h2>Mi Asesor</h2>
@@ -310,7 +300,7 @@ const MiAsesor: React.FC = () => {
 
               {activeTab === 'comunicacion' && (
                 <div className="communication-content">
-                  <Chat advisor={advisor} />
+                  <FullWidthChat advisor={advisor} />
                 </div>
               )}
 

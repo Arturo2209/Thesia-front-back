@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../Layout/Sidebar';
+import StudentHeader from '../Shared/StudentHeader';
 import authService from '../../services/authService';
 import { useDashboardData } from './hooks/useDashboardData';  // Importar hook
 import { dashboardStyles } from './Dashboard.styles';
@@ -70,11 +71,7 @@ const Dashboard: React.FC = () => {
       <Sidebar onLogout={handleLogout} />
       
       <div className="main-content">
-        {/* Header */}
-        <header className="main-header">
-          <h1>¡Bienvenid@ {dashboardData?.user?.name || 'Usuario'}!</h1>
-          <div className="notification-icon">🔔</div>
-        </header>
+        <StudentHeader title={`¡Bienvenid@ ${dashboardData?.user?.name || 'Usuario'}!`} />
         
         <div className="content-section">
           {/* Connection status removed by request */}
@@ -106,7 +103,7 @@ const Dashboard: React.FC = () => {
           {/* Grid principal del dashboard */}
           <div className="dashboard-grid">
             
-            {/* Columna izquierda */}
+              {/* Mi Asesor removido por solicitud */}
             <div className="left-column">
               
               {/* Tarjeta de progreso de tesis */}
@@ -181,54 +178,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Tarjeta de actividad reciente */}
-              <div className="dashboard-card">
-                <div className="card-header">
-                  <h3>Actividad Reciente</h3>
-                  <span className="card-icon">🕒</span>
-                </div>
-                <div className="card-content">
-                  {dashboardData?.activities && dashboardData.activities.length > 0 ? (
-                    <div className="activities-list">
-                      {dashboardData.activities.slice(0, 3).map((activity) => (
-                        <div key={activity.id} className="activity-item">
-                          <div className="activity-description">
-                            {activity.description}
-                          </div>
-                          <div className="activity-date">
-                            {new Date(activity.date).toLocaleDateString('es-ES', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="no-activities">
-                      <div className="no-activities-icon">📋</div>
-                      <p>Aún no cuentas con actividades</p>
-                    </div>
-                  )}
-                  {dashboardData?.recentNotifications && dashboardData.recentNotifications.length > 0 && (
-                    <div style={{marginTop:16}}>
-                      <h4 style={{margin:'0 0 8px 0', fontSize:14, color:'#1f2937'}}>Notificaciones recientes</h4>
-                      <ul style={{listStyle:'none',margin:0,padding:0,display:'flex',flexDirection:'column',gap:8}}>
-                        {dashboardData.recentNotifications.map(n => (
-                          <li key={n.id} style={{display:'flex',gap:8,alignItems:'center',fontSize:13}}>
-                            <span>{n.icon}</span>
-                            <span style={{flex:1}}>{n.message}</span>
-                            <span style={{fontSize:11,color:'#64748b'}}>{n.timeAgo}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
+              {/* Actividad Reciente removida por solicitud: se migrará al dropdown del icono de notificaciones */}
             </div>
 
             {/* Columna derecha */}
@@ -303,42 +253,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Tarjeta de asesor */}
-              <div className="dashboard-card">
-                <div className="card-header">
-                  <h3>Mi Asesor</h3>
-                  <span className="card-icon">👨‍🏫</span>
-                </div>
-                <div className="card-content">
-                  {dashboardData?.advisor?.hasAdvisor ? (
-                    <div className="advisor-info">
-                      <div className="advisor-avatar">
-                        {dashboardData.advisor.name?.charAt(0)}
-                      </div>
-                      <div className="advisor-details">
-                        <h4>{dashboardData.advisor.name}</h4>
-                        <p className="advisor-specialty">{dashboardData.advisor.especialidad}</p>
-                        <p className="advisor-email">{dashboardData.advisor.email}</p>
-                        <div className="advisor-stats">
-                          <span>👥 {dashboardData.advisor.totalStudents} estudiantes</span>
-                        </div>
-                        <button 
-                          className="contact-button"
-                          onClick={() => navigate('/mi-asesor')}
-                        >
-                          💬 Contactar
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="no-advisor">
-                      <div className="no-advisor-icon">👨‍🏫</div>
-                      <h4>Sin asesor asignado</h4>
-                      <p>Registra tu tesis para obtener un asesor</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              {/* Mi Asesor removido por solicitud */}
 
               {/* Tareas pendientes eliminadas por solicitud */}
             </div>

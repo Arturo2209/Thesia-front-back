@@ -2,6 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../Layout/Sidebar';
+import StudentHeader from '../Shared/StudentHeader';
 import authService from '../../services/authService';
 import { useNotifications } from './hooks/useNotifications';
 import NotificationsList from './components/NotificationsList';
@@ -38,10 +39,7 @@ const Notificaciones: React.FC = () => {
     <div className="notifications-container">
       <Sidebar onLogout={handleLogout} />
       <div className="main-content">
-        <header className="main-header">
-          <h1>Sistema de Tesis y Pretesis</h1>
-          <div className="notification-icon" title="Notificaciones">🔔</div>
-        </header>
+        <StudentHeader title="Sistema de Tesis y Pretesis" />
 
         <div className="content-section">
           <div className="notifications-page-container">

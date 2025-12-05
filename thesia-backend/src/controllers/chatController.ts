@@ -149,7 +149,8 @@ export const sendMessage = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
-    const { content, recipientId } = req.body;
+    const { content, recipientId } = req.body as { content?: string; recipientId?: number };
+    const file = (req as any).file as Express.Multer.File | undefined;
 
     console.log('💬 === ENVIANDO MENSAJE ===');
     console.log('De:', { id: userId, role: userRole });
@@ -162,10 +163,10 @@ export const sendMessage = async (req: Request, res: Response) => {
       });
     }
 
-    if (!content || !recipientId) {
+    if ((!content && !file) || !recipientId) {
       return res.status(400).json({
         success: false,
-        message: 'Se requiere contenido del mensaje y destinatario'
+        message: 'Se requiere contenido o archivo y destinatario'
       });
     }
 
@@ -210,6 +211,9 @@ export const sendMessage = async (req: Request, res: Response) => {
     }
 
     // Crear el mensaje real
+    const tipo = file ? 'archivo' : 'texto';
+    const contenidoValue = file ? `/uploads/chat/${file.filename}` : content;
+
     const insertQuery = `
       INSERT INTO mensajes (
         contenido,
@@ -218,11 +222,11 @@ export const sendMessage = async (req: Request, res: Response) => {
         tipo,
         fecha_envio,
         leido
-      ) VALUES (?, ?, ?, 'texto', NOW(), false)
+      ) VALUES (?, ?, ?, ?, NOW(), false)
     `;
 
     const [result] = await sequelize.query(insertQuery, {
-      replacements: [content, userId, recipientId]
+      replacements: [contenidoValue, userId, recipientId, tipo]
     });
 
     console.log('✅ Mensaje insertado en DB, resultado bruto:', result);

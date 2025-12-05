@@ -5,12 +5,12 @@ export const chatStyles = `
     flex-direction: column;
     width: 100%;
     box-sizing: border-box;
-    /* Altura fija para evitar cambios al alternar pestañas */
-    height: 700px;
-    min-height: 700px;
-    max-height: 700px;
+    /* Altura adaptativa para ocupar casi toda la pantalla dentro de la tarjeta */
+    height: 74vh;
+    min-height: 560px;
+    max-height: none;
     background: white;
-    border-radius: 12px;
+    border-radius: 12px; /* igual que perfil */
     border: 1px solid #e5e7eb;
     overflow: hidden;
   }
@@ -19,7 +19,7 @@ export const chatStyles = `
   .chat-header {
     display: flex;
     align-items: center;
-    padding: 16px 20px;
+    padding: 24px; /* igual que perfil */
     background: #f8f9fa;
     border-bottom: 1px solid #e5e7eb;
     gap: 12px;
@@ -40,8 +40,9 @@ export const chatStyles = `
 
   .chat-header-info h4 {
     margin: 0;
-    font-size: 16px;
+    font-size: 20px; /* Más grande, consistente con perfil */
     color: #333;
+    font-weight: 700;
   }
 
   .chat-header-info p {
@@ -72,7 +73,8 @@ export const chatStyles = `
   .messages-container {
     flex: 1;
     overflow-y: auto;
-    padding: 20px 24px; /* Más aire horizontal */
+    /* Aire horizontal; coherente con tarjeta */
+    padding: 20px 24px;
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -95,20 +97,23 @@ export const chatStyles = `
   /* === MESSAGE ITEM === */
   .message-item {
     display: flex;
-    margin-bottom: 8px;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
     animation: messageSlideIn 0.3s ease-out;
   }
 
   .message-item.own {
-    justify-content: flex-end;
+    align-items: flex-end;
   }
 
   .message-item.other {
-    justify-content: flex-start;
+    align-items: flex-start;
   }
 
   .message-bubble {
-    max-width: 82%; /* Más ancho por línea */
+    /* Ancho por línea ajustado, evitando tocar bordes */
+    max-width: 86%;
     padding: 14px 18px;
     border-radius: 18px;
     font-size: 15px;
@@ -131,14 +136,13 @@ export const chatStyles = `
 
   .message-time {
     font-size: 11px;
-    opacity: 0.7;
-    margin-top: 4px;
-    text-align: right;
+    opacity: 0.6;
+    margin-top: 2px;
+    color: #6b7280;
   }
-
-  .message-bubble.other .message-time {
-    text-align: left;
-  }
+  .message-time.subtle { opacity: 0.5; }
+  .message-item.other .message-time { text-align: left; align-self: flex-start; }
+  .message-item.own .message-time { text-align: right; align-self: flex-end; }
 
   .message-status {
     font-size: 11px;
@@ -158,11 +162,11 @@ export const chatStyles = `
   /* === CHAT INPUT === */
   .chat-input-container {
     display: flex;
-    align-items: flex-end; /* Alinear con base de textarea */
-    padding: 18px 24px;
+    align-items: center;
+    padding: 24px; /* igual que perfil */
     background: #fafafa;
     border-top: 1px solid #e5e7eb;
-    gap: 14px;
+    gap: 10px;
   }
 
   .chat-input {
@@ -188,6 +192,7 @@ export const chatStyles = `
 
   .chat-input::placeholder {
     color: #9ca3af;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
 
   .chat-send-btn {
@@ -203,6 +208,23 @@ export const chatStyles = `
     justify-content: center;
     font-size: 16px;
     transition: all 0.2s;
+  }
+
+  /* === DAY SEPARATOR === */
+  .day-separator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 8px 0 4px 0;
+    position: relative;
+  }
+  .day-separator span {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
   }
 
   .chat-send-btn:hover:not(:disabled) {
@@ -227,9 +249,12 @@ export const chatStyles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 16px;
+    line-height: 1;
     transition: all 0.2s;
   }
+  .message-file-link { color: #1f2937; text-decoration: none; }
+  .message-file-link:hover { text-decoration: underline; }
 
   .chat-attach-btn:hover {
     background: #e5e7eb;
@@ -239,7 +264,7 @@ export const chatStyles = `
   .quick-actions {
     display: flex;
     gap: 10px;
-    padding: 14px 24px;
+    padding: 24px; /* igual que perfil */
     background: white;
     border-bottom: 1px solid #f1f5f9;
     flex-wrap: wrap;
@@ -329,21 +354,21 @@ export const chatStyles = `
   /* === RESPONSIVE === */
   @media (max-width: 1024px) {
     .chat-container {
-      height: 640px;
-      min-height: 640px;
-      max-height: 640px;
+      height: 68vh;
+      min-height: 520px;
+      max-height: none;
     }
   }
 
   @media (max-width: 768px) {
     .chat-container {
-      height: 560px;
-      min-height: 560px;
-      max-height: 560px;
+      height: 60vh;
+      min-height: 500px;
+      max-height: none;
     }
     
     .message-bubble {
-      max-width: 85%;
+      max-width: 90%;
       font-size: 13px;
     }
     
@@ -367,13 +392,13 @@ export const chatStyles = `
 
   @media (max-width: 480px) {
     .chat-container {
-      height: 520px;
-      min-height: 520px;
-      max-height: 520px;
+      height: 56vh;
+      min-height: 460px;
+      max-height: none;
     }
     
     .message-bubble {
-      max-width: 90%;
+      max-width: 94%;
       padding: 10px 14px;
     }
   }

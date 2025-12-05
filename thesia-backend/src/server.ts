@@ -1,7 +1,10 @@
 import express from 'express';
+import path from 'path';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import http from 'http';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 // Importar configuración de base de datos
 import sequelize, { testConnection, verifyDatabase } from './config/database';
@@ -12,8 +15,6 @@ import scheduleRoutes from './routes/schedules';
 
 // Importar rutas CORREGIDAS
 import authRoutes from './routes/auth';
-// COMENTAR LAS RUTAS VIEJAS QUE CAUSAN CONFLICTO:
-// import apiRoutes from './routes/api';
 
 // IMPORTAR LAS RUTAS NUEVAS CORREGIDAS:
 import advisorsRouter from './routes/advisors';
@@ -35,12 +36,28 @@ const PORT = process.env.PORT || 3001;
 console.log('🚀 Iniciando servidor THESIA desde server.ts CON RUTAS CORREGIDAS Y DOCUMENTOS...');
 
 // Middleware
+app.use(helmet());
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+// No aplicar rate limit a la ruta de Socket.IO para evitar bloquear el tiempo real
+app.use((req, res, next) => {
+  if (req.path && req.path.startsWith('/socket.io/')) {
+    return next();
+  }
+  return (limiter as any)(req, res, next);
+});
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
 
 app.use(express.json());
+// Servir archivos subidos
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Middleware de logging detallado
 app.use((req, res, next) => {
@@ -63,8 +80,7 @@ app.use('/api/notifications', notificationsRouter);
 app.use('/api/reuniones', reunionesRouter);  // ✅ NUEVA RUTA DE REUNIONES
 app.use('/api/advisor', advisorRouter); // NUEVA RUTA PARA DOCUMENTOS DE ASESOR
 app.use('/api/chat', chatRouter); // 🆕 REGISTRAR CHAT
-// 🚨 COMENTAR LAS RUTAS VIEJAS:
-// app.use('/api', apiRoutes);
+// 🚨 Rutas viejas deshabilitadas
 
 console.log('✅ Rutas CORREGIDAS registradas:');
 console.log('   /api/advisors/*');
@@ -74,10 +90,7 @@ console.log('   /api/auth/*');
 console.log('   /api/chat/* ← RUTAS DE CHAT');
 console.log('   🚨 /api/* DESHABILITADO - RUTAS VIEJAS');
 
-// Registrar rutas de la API
-import apiRoutes from './routes/api';
-console.log('🔧 Registrando rutas de la API en /api');
-app.use('/api', apiRoutes);
+// Rutas antiguas '/api' generales eliminadas para evitar conflictos
 
 // Verificar rutas registradas
 app._router.stack.forEach((middleware: any) => {

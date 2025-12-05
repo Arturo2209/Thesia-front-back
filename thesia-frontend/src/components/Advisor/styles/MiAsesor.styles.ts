@@ -24,7 +24,8 @@ export const miAsesorStyles = `
     background: #ffffff; /* Fondo blanco para unificar con Dashboard */
     min-height: 100vh;
     position: relative;
-    width: calc(100% - 280px);
+    /* Usar ancho automático (flex) para evitar espacios en blanco a la derecha */
+    width: auto;
     overflow-x: hidden;
   }
 
@@ -60,9 +61,23 @@ export const miAsesorStyles = `
   }
 
   .asesor-section {
-    padding: 32px;
-    max-width: 100%;
-    margin: 0 auto;
+    padding: 24px;
+    max-width: 1280px; /* como en Perfil: contenido centrado con ancho cómodo */
+    width: 100%;
+    margin: 0 auto; /* centrar y dar aire simétrico izquierda/derecha */
+  }
+
+  /* Modo ancho para la pestaña Comunicación: sin padding para que el chat sea full width */
+  .asesor-section.wide {
+    /* En modo comunicación, mantener el mismo padding que Perfil */
+    padding: 24px;
+  }
+
+  /* En modo comunicación, quitar padding izquierdo del contenido para pegarlo al borde */
+  .asesor-section.wide .communication-content {
+    /* La tarjeta de comunicación ya tiene padding interno; no duplicar */
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .asesor-header {
@@ -87,6 +102,7 @@ export const miAsesorStyles = `
     padding: 24px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     margin-bottom: 24px;
+    width: 100%; /* tarjeta a todo el ancho */
   }
 
   .advisor-main-info {
@@ -231,7 +247,7 @@ export const miAsesorStyles = `
   }
 
   .tab-content {
-    padding: 40px;
+    padding: 0; /* Quitar padding para que "comunicación" sea full width */
     /* Altura mínima uniforme para evitar jumps entre pestañas */
     min-height: 880px;
     width: 100%;
@@ -245,13 +261,30 @@ export const miAsesorStyles = `
     width: 100%;
   }
 
+  /* Añadir padding solo al contenido de perfil para mantener aire */
+  .profile-content {
+    padding: 40px;
+  }
+
   .communication-content {
+    /* Igualar distribución a la tarjeta de perfil para consistencia visual */
     background: #fff;
     border: 1px solid #e2e8f0;
-    border-radius: 24px;
-    padding: 40px 44px;
-    box-shadow: 0 6px 22px -4px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+    border-radius: 12px;
+    padding: 24px; /* mismo padding base que perfil */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     box-sizing: border-box;
+    width: 100%;
+  }
+
+  /* Modo "full-bleed" para Comunicación: tabs sin sombra ni borde */
+  .asesor-section.wide .tabs-container {
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .asesor-section.wide .tabs {
+    border-bottom: none;
   }
 
   /* === PROFILE TAB CONTENT === */

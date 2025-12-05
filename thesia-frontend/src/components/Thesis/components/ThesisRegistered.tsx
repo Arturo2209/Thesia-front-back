@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ThesisData } from '../types/thesis.types';
+import StudentHeader from '../../Shared/StudentHeader';
 import { thesisRegisteredStyles } from '../styles/ThesisRegistered.styles';
 
 interface ThesisRegisteredProps {
@@ -15,10 +16,7 @@ const ThesisRegistered: React.FC<ThesisRegisteredProps> = ({
   return (
     <>
       <div className="main-content">
-        <header className="main-header">
-          <h1>Sistema de Tesis y Pretesis</h1>
-          <div className="notification-icon">🔔</div>
-        </header>
+        <StudentHeader title="Sistema de Tesis y Pretesis" />
 
         <div className="content-section">
           <div className="thesis-registered-container">

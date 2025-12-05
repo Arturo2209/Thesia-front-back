@@ -1,5 +1,6 @@
 import React from 'react';
 import Sidebar from '../Layout/Sidebar';
+import StudentHeader from '../Shared/StudentHeader';
 import StudentMeetingsList from '../Advisor/components/StudentMeetingsList';
 import AdvisorSchedule from '../Advisor/components/AdvisorSchedule';
 import { io, Socket } from 'socket.io-client';
@@ -67,10 +68,7 @@ const StudentMeetingsPage: React.FC = () => {
     <div className="asesor-container">
       <Sidebar />
       <div className="main-content">
-        <header className="main-header">
-          <h1>Sistema de Tesis y Pretesis</h1>
-          <div className="notification-icon">🔔</div>
-        </header>
+        <StudentHeader title="Sistema de Tesis y Pretesis" />
         <div className="asesor-section">
           <div className="asesor-header">
             <h2>Reuniones</h2>
